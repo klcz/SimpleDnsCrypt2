@@ -1,5 +1,4 @@
 using Caliburn.Micro;
-using DnsCrypt.Models;
 using SimpleDnsCrypt.Config;
 using SimpleDnsCrypt.Extensions;
 using SimpleDnsCrypt.Helper;
@@ -18,6 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using SimpleDnsCrypt.Utils.Models;
 using TabControl = System.Windows.Controls.TabControl;
 
 namespace SimpleDnsCrypt.ViewModels
@@ -86,7 +86,7 @@ namespace SimpleDnsCrypt.ViewModels
 			Instance = this;
 			_windowManager = windowManager;
 			_events = events;
-			_events.Subscribe(this);
+			_events.SubscribeOnPublishedThread(this);
 			_windowWidth = Properties.Settings.Default.WindowWidth;
 			_windowHeight = Properties.Settings.Default.WindowHeight;
 			_windowTitle =
@@ -138,7 +138,7 @@ namespace SimpleDnsCrypt.ViewModels
 					if (DnscryptProxyConfiguration.server_names == null || DnscryptProxyConfiguration.server_names.Count == 0)
 					{
 						_isDnsCryptAutomaticModeEnabled = true;
-						_windowManager.ShowMetroMessageBox(
+						_ = _windowManager.ShowMetroMessageBox(
 							LocalizationEx.GetUiString("message_content_no_server_selected", Thread.CurrentThread.CurrentCulture),
 							LocalizationEx.GetUiString("message_title_no_server_selected", Thread.CurrentThread.CurrentCulture),
 							MessageBoxButton.OK, BoxType.Warning);
@@ -665,14 +665,14 @@ namespace SimpleDnsCrypt.ViewModels
 			};
 			dynamic settings = new ExpandoObject();
 			settings.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-			_windowManager.ShowDialog(win, null, settings);
+			_windowManager.ShowDialogAsync(win, null, settings);
 		}
 
 		public void Settings()
 		{
 			dynamic settings = new ExpandoObject();
 			settings.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-			var result = _windowManager.ShowDialog(SettingsViewModel, null, settings);
+			var result = _windowManager.ShowDialogAsync(SettingsViewModel, null, settings).Result;
 			if (!result) Properties.Settings.Default.Save();
 		}
 
@@ -683,7 +683,7 @@ namespace SimpleDnsCrypt.ViewModels
 			ProxiesViewModel.WindowTitle = LocalizationEx.GetUiString("proxy_manage_proxies", Thread.CurrentThread.CurrentCulture);
 			ProxiesViewModel.HttpProxyInput = string.IsNullOrEmpty(DnscryptProxyConfiguration.http_proxy) ? "" : DnscryptProxyConfiguration.http_proxy;
 			ProxiesViewModel.SocksProxyInput = string.IsNullOrEmpty(DnscryptProxyConfiguration.proxy) ? "" : DnscryptProxyConfiguration.proxy;
-			var result = _windowManager.ShowDialog(ProxiesViewModel, null, settings);
+			var result = _windowManager.ShowDialogAsync(ProxiesViewModel, null, settings).Result;
 			if (result) return;
 			var saveAdvancedSettings = false;
 
@@ -728,7 +728,7 @@ namespace SimpleDnsCrypt.ViewModels
 			var oldAddressed = new List<string>(DnscryptProxyConfiguration.listen_addresses);
 			FallbackResolversViewModel.FallbackResolvers = DnscryptProxyConfiguration.fallback_resolvers;
 			FallbackResolversViewModel.WindowTitle = LocalizationEx.GetUiString("advanced_settings_fallback_resolvers", Thread.CurrentThread.CurrentCulture);
-			var result = _windowManager.ShowDialog(FallbackResolversViewModel, null, settings);
+			var result = _windowManager.ShowDialogAsync(FallbackResolversViewModel, null, settings).Result;
 			if (!result)
 			{
 				if (FallbackResolversViewModel.FallbackResolvers.Count == 0) return;
@@ -748,7 +748,7 @@ namespace SimpleDnsCrypt.ViewModels
 			var oldAddressed = new List<string>(DnscryptProxyConfiguration.listen_addresses);
 			ListenAddressesViewModel.ListenAddresses = DnscryptProxyConfiguration.listen_addresses;
 			ListenAddressesViewModel.WindowTitle = LocalizationEx.GetUiString("address_settings_listen_addresses", Thread.CurrentThread.CurrentCulture);
-			var result = _windowManager.ShowDialog(ListenAddressesViewModel, null, settings);
+			var result = _windowManager.ShowDialogAsync(ListenAddressesViewModel, null, settings).Result;
 			if (!result)
 			{
 				if (ListenAddressesViewModel.ListenAddresses.Count == 0) return;
@@ -817,13 +817,11 @@ namespace SimpleDnsCrypt.ViewModels
 						IsServiceInstalled = true;
 						if (DnsCryptProxyManager.IsDnsCryptProxyRunning())
 						{
-							await Task.Run(() => { DnsCryptProxyManager.Restart(); }).ConfigureAwait(false);
-							await Task.Delay(Global.ServiceRestartTime).ConfigureAwait(false);
+							await DnsCryptProxyManager.Restart().ConfigureAwait(false);
 						}
 						else
 						{
-							await Task.Run(() => { DnsCryptProxyManager.Start(); }).ConfigureAwait(false);
-							await Task.Delay(Global.ServiceStartTime).ConfigureAwait(false);
+							await DnsCryptProxyManager.Start().ConfigureAwait(false);
 						}
 					}
 					else
@@ -852,8 +850,7 @@ namespace SimpleDnsCrypt.ViewModels
 			if (IsResolverRunning)
 			{
 				// service is running, stop it
-				await Task.Run(() => { DnsCryptProxyManager.Stop(); }).ConfigureAwait(false);
-				await Task.Delay(Global.ServiceStopTime).ConfigureAwait(false);
+				await DnsCryptProxyManager.Stop().ConfigureAwait(false);
 				_isResolverRunning = DnsCryptProxyManager.IsDnsCryptProxyRunning();
 				NotifyOfPropertyChange(() => IsResolverRunning);
 			}
@@ -863,8 +860,7 @@ namespace SimpleDnsCrypt.ViewModels
 				{
 					IsServiceInstalled = true;
 					// service is installed, just start them
-					await Task.Run(() => { DnsCryptProxyManager.Start(); }).ConfigureAwait(false);
-					await Task.Delay(Global.ServiceStartTime).ConfigureAwait(false);
+					await DnsCryptProxyManager.Start().ConfigureAwait(false);
 					_isResolverRunning = DnsCryptProxyManager.IsDnsCryptProxyRunning();
 					NotifyOfPropertyChange(() => IsResolverRunning);
 				}
@@ -876,8 +872,7 @@ namespace SimpleDnsCrypt.ViewModels
 					if (DnsCryptProxyManager.IsDnsCryptProxyInstalled())
 					{
 						IsServiceInstalled = true;
-						await Task.Run(() => { DnsCryptProxyManager.Start(); }).ConfigureAwait(false);
-						await Task.Delay(Global.ServiceStartTime).ConfigureAwait(false);
+						await DnsCryptProxyManager.Start().ConfigureAwait(false);
 					}
 					else
 					{
@@ -921,7 +916,7 @@ namespace SimpleDnsCrypt.ViewModels
 			foreach (var localNetworkInterface in localNetworkInterfaces) _localNetworkInterfaces.Add(localNetworkInterface);
 		}
 
-		public async void NetworkCardClicked(LocalNetworkInterface localNetworkInterface)
+		public async Task NetworkCardClicked(LocalNetworkInterface localNetworkInterface)
 		{
 			if (localNetworkInterface == null) return;
 			if (!localNetworkInterface.IsChangeable) return;
@@ -954,7 +949,7 @@ namespace SimpleDnsCrypt.ViewModels
 						localNetworkInterface.UseDnsCrypt = status;
 					}
 				else
-					_windowManager.ShowMetroMessageBox(
+					_ = _windowManager.ShowMetroMessageBox(
 						LocalizationEx.GetUiString("message_content_service_not_running", Thread.CurrentThread.CurrentCulture),
 						LocalizationEx.GetUiString("message_title_service_not_running", Thread.CurrentThread.CurrentCulture),
 						MessageBoxButton.OK, BoxType.Warning);
@@ -1008,7 +1003,7 @@ namespace SimpleDnsCrypt.ViewModels
 			}
 			else
 			{
-				_windowManager.ShowMetroMessageBox(
+				_ = _windowManager.ShowMetroMessageBox(
 					LocalizationEx.GetUiString("message_content_no_server_selected", Thread.CurrentThread.CurrentCulture),
 					LocalizationEx.GetUiString("message_title_no_server_selected", Thread.CurrentThread.CurrentCulture),
 					MessageBoxButton.OK, BoxType.Warning);
@@ -1063,7 +1058,7 @@ namespace SimpleDnsCrypt.ViewModels
 				}
 				RouteViewModel.Relays = _relays;
 				RouteViewModel.Resolver = availableResolver.DisplayName;
-				var result = _windowManager.ShowDialog(RouteViewModel, null, settings);
+				var result = _windowManager.ShowDialogAsync(RouteViewModel, null, settings).Result;
 				if (result) return;
 
 				if (!RouteViewModel.Route.Any())
@@ -1243,9 +1238,9 @@ namespace SimpleDnsCrypt.ViewModels
 		/// <summary>
 		///     Uninstall the installed dnscrypt-proxy service.
 		/// </summary>
-		public async void UninstallService()
+		public async Task UninstallService()
 		{
-			var result = _windowManager.ShowMetroMessageBox(
+			var result = await _windowManager.ShowMetroMessageBox(
 				LocalizationEx.GetUiString("dialog_message_uninstall", Thread.CurrentThread.CurrentCulture),
 				LocalizationEx.GetUiString("dialog_uninstall_title", Thread.CurrentThread.CurrentCulture),
 				MessageBoxButton.YesNo, BoxType.Default);
@@ -1255,8 +1250,7 @@ namespace SimpleDnsCrypt.ViewModels
 
 			if (DnsCryptProxyManager.IsDnsCryptProxyRunning())
 			{
-				await Task.Run(() => { DnsCryptProxyManager.Stop(); }).ConfigureAwait(false);
-				await Task.Delay(Global.ServiceStopTime).ConfigureAwait(false);
+				await DnsCryptProxyManager.Stop().ConfigureAwait(false);
 			}
 
 			await Task.Run(() => { DnsCryptProxyManager.Uninstall(); }).ConfigureAwait(false);
@@ -1281,7 +1275,7 @@ namespace SimpleDnsCrypt.ViewModels
 			if (!DnsCryptProxyManager.IsDnsCryptProxyInstalled())
 			{
 				IsServiceInstalled = false;
-				_windowManager.ShowMetroMessageBox(
+				_ = _windowManager.ShowMetroMessageBox(
 					LocalizationEx.GetUiString("message_content_uninstallation_successful",
 						Thread.CurrentThread.CurrentCulture),
 					LocalizationEx.GetUiString("message_title_uninstallation_successful",
@@ -1291,7 +1285,7 @@ namespace SimpleDnsCrypt.ViewModels
 			else
 			{
 				IsServiceInstalled = true;
-				_windowManager.ShowMetroMessageBox(
+				_ = _windowManager.ShowMetroMessageBox(
 					LocalizationEx.GetUiString("message_content_uninstallation_error",
 						Thread.CurrentThread.CurrentCulture),
 					LocalizationEx.GetUiString("message_title_uninstallation_error",

@@ -1,5 +1,4 @@
 ﻿using Caliburn.Micro;
-using DnsCrypt.Blacklist;
 using MahApps.Metro.Controls;
 using MahApps.Metro.SimpleChildWindow;
 using SimpleDnsCrypt.Config;
@@ -46,7 +45,7 @@ namespace SimpleDnsCrypt.ViewModels
 		{
 			_windowManager = windowManager;
 			_events = events;
-			_events.Subscribe(this);
+			_events.SubscribeOnPublishedThread(this);
 			_cloakingRules = new BindableCollection<Rule>();
 			_forwardingRules = new BindableCollection<Rule>();
 
@@ -94,7 +93,7 @@ namespace SimpleDnsCrypt.ViewModels
 				if (string.IsNullOrEmpty(file)) return;
 
 				if (!File.Exists(file)) return;
-				var lines = await DomainBlacklist.ReadAllLinesAsync(file);
+				var lines = await File.ReadAllLinesAsync(file);
 				if (lines.Length > 0)
 				{
 					var tmpRules = new List<Rule>();
@@ -201,13 +200,11 @@ namespace SimpleDnsCrypt.ViewModels
 							{
 								if (DnsCryptProxyManager.IsDnsCryptProxyRunning())
 								{
-									DnsCryptProxyManager.Restart();
-									await Task.Delay(Global.ServiceRestartTime).ConfigureAwait(false);
+									await DnsCryptProxyManager.Restart().ConfigureAwait(false);
 								}
 								else
 								{
-									DnsCryptProxyManager.Start();
-									await Task.Delay(Global.ServiceStartTime).ConfigureAwait(false);
+									await DnsCryptProxyManager.Start().ConfigureAwait(false);
 								}
 							}
 							else
@@ -216,8 +213,7 @@ namespace SimpleDnsCrypt.ViewModels
 								await Task.Delay(Global.ServiceInstallTime).ConfigureAwait(false);
 								if (DnsCryptProxyManager.IsDnsCryptProxyInstalled())
 								{
-									DnsCryptProxyManager.Start();
-									await Task.Delay(Global.ServiceStartTime).ConfigureAwait(false);
+									await DnsCryptProxyManager.Start().ConfigureAwait(false);
 								}
 							}
 						}
@@ -232,8 +228,7 @@ namespace SimpleDnsCrypt.ViewModels
 					DnscryptProxyConfigurationManager.SaveConfiguration();
 					if (DnsCryptProxyManager.IsDnsCryptProxyRunning())
 					{
-						DnsCryptProxyManager.Restart();
-						await Task.Delay(Global.ServiceRestartTime).ConfigureAwait(false);
+						await DnsCryptProxyManager.Restart().ConfigureAwait(false);
 					}
 				}
 			}
@@ -401,7 +396,7 @@ namespace SimpleDnsCrypt.ViewModels
 				if (string.IsNullOrEmpty(file)) return;
 
 				if (!File.Exists(file)) return;
-				var lines = await DomainBlacklist.ReadAllLinesAsync(file);
+				var lines = await File.ReadAllLinesAsync(file);
 				if (lines.Length > 0)
 				{
 					var tmpRules = new List<Rule>();
@@ -650,13 +645,11 @@ namespace SimpleDnsCrypt.ViewModels
 							{
 								if (DnsCryptProxyManager.IsDnsCryptProxyRunning())
 								{
-									DnsCryptProxyManager.Restart();
-									await Task.Delay(Global.ServiceRestartTime).ConfigureAwait(false);
+									await DnsCryptProxyManager.Restart().ConfigureAwait(false);
 								}
 								else
 								{
-									DnsCryptProxyManager.Start();
-									await Task.Delay(Global.ServiceStartTime).ConfigureAwait(false);
+									await DnsCryptProxyManager.Start().ConfigureAwait(false);
 								}
 							}
 							else
@@ -665,8 +658,7 @@ namespace SimpleDnsCrypt.ViewModels
 								await Task.Delay(Global.ServiceInstallTime).ConfigureAwait(false);
 								if (DnsCryptProxyManager.IsDnsCryptProxyInstalled())
 								{
-									DnsCryptProxyManager.Start();
-									await Task.Delay(Global.ServiceStartTime).ConfigureAwait(false);
+									await DnsCryptProxyManager.Start().ConfigureAwait(false);
 								}
 							}
 						}
@@ -681,8 +673,7 @@ namespace SimpleDnsCrypt.ViewModels
 					DnscryptProxyConfigurationManager.SaveConfiguration();
 					if (DnsCryptProxyManager.IsDnsCryptProxyRunning())
 					{
-						DnsCryptProxyManager.Restart();
-						await Task.Delay(Global.ServiceRestartTime).ConfigureAwait(false);
+						await DnsCryptProxyManager.Restart().ConfigureAwait(false);
 					}
 				}
 			}

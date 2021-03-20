@@ -8,23 +8,6 @@
 		public const string ApplicationName = "Simple DNSCrypt";
 
 		/// <summary>
-		///     Remote URI where the application will find the update informations.
-		/// </summary>
-		public const string ApplicationUpdateUri =
-			"https://raw.githubusercontent.com/bitbeans/SimpleDnsCrypt/master/update.yml";
-
-		/// <summary>
-		///     Remote URI where the application will find the update informations.
-		/// </summary>
-		public const string ApplicationUpdateUri64 =
-			"https://raw.githubusercontent.com/bitbeans/SimpleDnsCrypt/master/update64.yml";
-
-		/// <summary>
-		///     The public key to validate the installer.
-		/// </summary>
-		public const string ApplicationUpdatePublicKey = "RWTSM+4BNNvkZPNkHgE88ETlhWa+0HDzU5CN8TvbyvmhVUcr6aQXfssV";
-
-		/// <summary>
 		/// Microsoft Visual C++ Redistributable for Visual Studio 2015 - 2019 (x86)
 		/// </summary>
 		public const string RedistributablePackage86 = "https://aka.ms/vs/16/release/VC_redist.x86.exe";
@@ -44,7 +27,8 @@
 		/// </summary>
 		public const string DnsCryptProxyFolder = "dnscrypt-proxy";
 
-		public const string DnsCryptProxyExecutableName = "dnscrypt-proxy.exe";
+		public const string DnsCryptProxyExecutableName86 = "dnscrypt-proxy86.exe";
+		public const string DnsCryptProxyExecutableName64 = "dnscrypt-proxy64.exe";
 
 		public const string DnsCryptConfigurationFile = "dnscrypt-proxy.toml";
 
@@ -52,11 +36,6 @@
 		///		Logfile name of dnscrypt-proxy.
 		/// </summary>
 		public const string DnsCryptLogFile = "dnscrypt-proxy.log";
-
-		/// <summary>
-		///     Time we wait on a service restart (ms).
-		/// </summary>
-		public const int ServiceRestartTime = 5000;
 
 		/// <summary>
 		///     Time we wait on a service start (ms).
@@ -106,7 +85,8 @@
 		/// </summary>
 		public static readonly string[] DnsCryptProxyFiles =
 		{
-			"dnscrypt-proxy.exe",
+			DnsCryptProxyExecutableName64,
+			DnsCryptProxyExecutableName86,
 			"dnscrypt-proxy.toml",
 			"LICENSE"
 		};

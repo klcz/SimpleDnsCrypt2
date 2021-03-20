@@ -1,5 +1,4 @@
 ﻿using Caliburn.Micro;
-using minisign;
 using SimpleDnsCrypt.Config;
 using SimpleDnsCrypt.Helper;
 using SimpleDnsCrypt.Models;
@@ -74,59 +73,7 @@ namespace SimpleDnsCrypt.ViewModels
 						}
 					}
 				}
-
-				if (Properties.Settings.Default.AutoUpdate)
-				{
-					ProgressText = LocalizationEx.GetUiString("loader_checking_version", Thread.CurrentThread.CurrentCulture);
-					//TODO: remove in future version (for now we only have one channel)
-					Properties.Settings.Default.MinUpdateType = 2;
-					Properties.Settings.Default.Save();
-					var minUpdateType = (UpdateType)Properties.Settings.Default.MinUpdateType;
-					var update = await ApplicationUpdater.CheckForRemoteUpdateAsync(minUpdateType).ConfigureAwait(false);
-					if (update.CanUpdate)
-					{
-						ProgressText =
-							string.Format(LocalizationEx.GetUiString("loader_new_version_found", Thread.CurrentThread.CurrentCulture),
-								update.Update.Version);
-						await Task.Delay(200).ConfigureAwait(false);
-						var installer = await StartRemoteUpdateDownload(update).ConfigureAwait(false);
-						if (!string.IsNullOrEmpty(installer) && File.Exists(installer))
-						{
-							ProgressText = LocalizationEx.GetUiString("loader_starting_update", Thread.CurrentThread.CurrentCulture);
-							await Task.Delay(200).ConfigureAwait(false);
-							if (Properties.Settings.Default.AutoUpdateSilent)
-							{
-								// auto install
-								const string arguments = "/qb /passive /norestart";
-								var startInfo = new ProcessStartInfo(installer)
-								{
-									Arguments = arguments,
-									UseShellExecute = true
-								};
-								Process.Start(startInfo);
-							}
-							else
-							{
-								Process.Start(installer);
-							}
-							Process.GetCurrentProcess().Kill();
-						}
-						else
-						{
-							await Task.Delay(500).ConfigureAwait(false);
-							ProgressText = LocalizationEx.GetUiString("loader_update_failed", Thread.CurrentThread.CurrentCulture);
-						}
-					}
-					else
-					{
-						ProgressText = LocalizationEx.GetUiString("loader_latest_version", Thread.CurrentThread.CurrentCulture);
-					}
-				}
-				else
-				{
-					await Task.Delay(500).ConfigureAwait(false);
-				}
-
+				
 				ProgressText =
 					string.Format(LocalizationEx.GetUiString("loader_validate_folder", Thread.CurrentThread.CurrentCulture),
 						Global.DnsCryptProxyFolder);
@@ -218,22 +165,22 @@ namespace SimpleDnsCrypt.ViewModels
 
 				if (Properties.Settings.Default.TrayMode)
 				{
-					Execute.OnUIThread(() => _windowManager.ShowWindow(_systemTrayViewModel));
+					await Execute.OnUIThreadAsync(() => _windowManager.ShowWindowAsync(_systemTrayViewModel));
 					if (Properties.Settings.Default.StartInTray)
 					{
 						Execute.OnUIThread(() => _systemTrayViewModel.HideWindow());
 					}
 					else
 					{
-						Execute.OnUIThread(() => _windowManager.ShowWindow(_mainViewModel));
+						await Execute.OnUIThreadAsync(() => _windowManager.ShowWindowAsync(_mainViewModel));
 					}
 				}
 				else
 				{
-					Execute.OnUIThread(() => _windowManager.ShowWindow(_mainViewModel));
+					await Execute.OnUIThreadAsync(() => _windowManager.ShowWindowAsync(_mainViewModel));
 				}
 
-				TryClose(true);
+				await TryCloseAsync(true);
 			}
 			catch (Exception exception)
 			{
@@ -253,7 +200,7 @@ namespace SimpleDnsCrypt.ViewModels
 
 			_windowManager = windowManager;
 			_events = events;
-			_events.Subscribe(this);
+			_events.SubscribeOnPublishedThread(this);
 			_titleText = $"{Global.ApplicationName} {VersionHelper.PublishVersion} {VersionHelper.PublishBuild}";
 			LocalizeDictionary.Instance.SetCurrentThreadCulture = true;
 			var languages = LocalizationEx.GetSupportedLanguages();
@@ -311,43 +258,6 @@ namespace SimpleDnsCrypt.ViewModels
 				_progressText = value;
 				NotifyOfPropertyChange(() => ProgressText);
 			}
-		}
-
-		private async Task<string> StartRemoteUpdateDownload(RemoteUpdate remoteUpdate)
-		{
-			var installerPath = string.Empty;
-			try
-			{
-				ProgressText = LocalizationEx.GetUiString("loader_downloading_signature", Thread.CurrentThread.CurrentCulture);
-				var signature = await ApplicationUpdater.DownloadRemoteSignatureAsync(remoteUpdate.Update.Signature.Uri).ConfigureAwait(false);
-				ProgressText = LocalizationEx.GetUiString("loader_downloading_installer", Thread.CurrentThread.CurrentCulture);
-				var installer = await ApplicationUpdater.DownloadRemoteInstallerAsync(remoteUpdate.Update.Installer.Uri).ConfigureAwait(false);
-				if (!string.IsNullOrEmpty(signature) && installer != null)
-				{
-					var s = signature.Split('\n');
-					var trimmedComment = s[2].Replace("trusted comment: ", "").Trim();
-					var trustedCommentBinary = Encoding.UTF8.GetBytes(trimmedComment);
-					var loadedSignature = Minisign.LoadSignature(Convert.FromBase64String(s[1]), trustedCommentBinary,
-						Convert.FromBase64String(s[3]));
-					var publicKey = Minisign.LoadPublicKeyFromString(Global.ApplicationUpdatePublicKey);
-					var valid = Minisign.ValidateSignature(installer, loadedSignature, publicKey);
-
-					if (valid)
-					{
-						var path = Path.Combine(Path.GetTempPath(), remoteUpdate.Update.Installer.Name);
-						File.WriteAllBytes(path, installer);
-						if (File.Exists(path))
-						{
-							installerPath = path;
-						}
-					}
-				}
-			}
-			catch (Exception exception)
-			{
-				Log.Error(exception);
-			}
-			return installerPath;
 		}
 
 		/// <summary>

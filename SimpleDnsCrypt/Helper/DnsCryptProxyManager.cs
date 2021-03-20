@@ -1,6 +1,5 @@
 ﻿using Caliburn.Micro;
 using Microsoft.Win32;
-using Nett;
 using Newtonsoft.Json;
 using SimpleDnsCrypt.Config;
 using SimpleDnsCrypt.Models;
@@ -10,7 +9,8 @@ using System.ComponentModel;
 using System.IO;
 using System.Security.AccessControl;
 using System.ServiceProcess;
-using System.Threading;
+using System.Threading.Tasks;
+using SimpleDnsCrypt.Extensions;
 
 namespace SimpleDnsCrypt.Helper
 {
@@ -19,6 +19,11 @@ namespace SimpleDnsCrypt.Helper
 	/// </summary>
 	public static class DnsCryptProxyManager
 	{
+		private static string DnsCryptProxyExecutablePath => Path.Combine(Directory.GetCurrentDirectory(), Global.DnsCryptProxyFolder,
+																		  Environment.Is64BitOperatingSystem
+																			  ? Global.DnsCryptProxyExecutableName64
+																			  : Global.DnsCryptProxyExecutableName86);
+
 		private static readonly ILog Log = LogManagerHelper.Factory();
 		private const string DnsCryptProxyServiceName = "dnscrypt-proxy";
 
@@ -82,15 +87,13 @@ namespace SimpleDnsCrypt.Helper
 		///     Restart the dnscrypt-proxy service.
 		/// </summary>
 		/// <returns><c>true</c> on success, otherwise <c>false</c></returns>
-		public static bool Restart()
+		public static async Task<bool> Restart()
 		{
 			try
 			{
 				var dnscryptService = new ServiceController { ServiceName = DnsCryptProxyServiceName };
-				dnscryptService.Stop();
-				Thread.Sleep(1000);
-				dnscryptService.Start();
-				return dnscryptService.Status == ServiceControllerStatus.Running;
+				await dnscryptService.StopAsync(TimeSpan.FromMilliseconds(Global.ServiceStopTime));
+				return await dnscryptService.StartAsync(TimeSpan.FromMilliseconds(Global.ServiceStartTime));
 			}
 			catch (Exception exception)
 			{
@@ -103,7 +106,7 @@ namespace SimpleDnsCrypt.Helper
 		///     Stop the dnscrypt-proxy service.
 		/// </summary>
 		/// <returns><c>true</c> on success, otherwise <c>false</c></returns>
-		public static bool Stop()
+		public static async Task<bool> Stop()
 		{
 			try
 			{
@@ -116,7 +119,7 @@ namespace SimpleDnsCrypt.Helper
 					case ServiceControllerStatus.PausePending:
 					case ServiceControllerStatus.StartPending:
 					case ServiceControllerStatus.Running:
-						dnscryptService.Stop();
+						await dnscryptService.StopAsync(TimeSpan.FromMilliseconds(Global.ServiceStopTime));
 						break;
 				}
 				return dnscryptService.Status == ServiceControllerStatus.Stopped;
@@ -132,7 +135,7 @@ namespace SimpleDnsCrypt.Helper
 		///     Start the dnscrypt-proxy service.
 		/// </summary>
 		/// <returns><c>true</c> on success, otherwise <c>false</c></returns>
-		public static bool Start()
+		public static async Task<bool> Start()
 		{
 			try
 			{
@@ -146,8 +149,7 @@ namespace SimpleDnsCrypt.Helper
 					case ServiceControllerStatus.PausePending:
 					case ServiceControllerStatus.Stopped:
 					case ServiceControllerStatus.StopPending:
-						dnscryptService.Start();
-						break;
+						return await dnscryptService.StartAsync(TimeSpan.FromMilliseconds(Global.ServiceStartTime));
 				}
 				return dnscryptService.Status == ServiceControllerStatus.Running;
 			}
@@ -164,7 +166,7 @@ namespace SimpleDnsCrypt.Helper
 		/// <returns></returns>
 		public static string GetVersion()
 		{
-			var dnsCryptProxyExecutablePath = Path.Combine(Directory.GetCurrentDirectory(), Global.DnsCryptProxyFolder, Global.DnsCryptProxyExecutableName);
+			var dnsCryptProxyExecutablePath = DnsCryptProxyExecutablePath;
 			var result = ProcessHelper.ExecuteWithArguments(dnsCryptProxyExecutablePath, "-version");
 			return result.Success ? result.StandardOutput.Replace(Environment.NewLine, "") : string.Empty;
 		}
@@ -177,7 +179,7 @@ namespace SimpleDnsCrypt.Helper
 		{
 			try
 			{
-				var dnsCryptProxyExecutablePath = Path.Combine(Directory.GetCurrentDirectory(), Global.DnsCryptProxyFolder, Global.DnsCryptProxyExecutableName);
+				var dnsCryptProxyExecutablePath = DnsCryptProxyExecutablePath;
 				var result = ProcessHelper.ExecuteWithArguments(dnsCryptProxyExecutablePath, "-check");
 				return result.Success;
 			}
@@ -195,7 +197,7 @@ namespace SimpleDnsCrypt.Helper
 		public static List<AvailableResolver> GetAvailableResolvers()
 		{
 			var resolvers = new List<AvailableResolver>();
-			var dnsCryptProxyExecutablePath = Path.Combine(Directory.GetCurrentDirectory(), Global.DnsCryptProxyFolder, Global.DnsCryptProxyExecutableName);
+			var dnsCryptProxyExecutablePath = DnsCryptProxyExecutablePath;
 			var result = ProcessHelper.ExecuteWithArguments(dnsCryptProxyExecutablePath, "-list -json");
 			if (!result.Success) return resolvers;
 			if (string.IsNullOrEmpty(result.StandardOutput)) return resolvers;
@@ -221,7 +223,7 @@ namespace SimpleDnsCrypt.Helper
 		public static List<AvailableResolver> GetAllResolversWithoutFilters()
 		{
 			var resolvers = new List<AvailableResolver>();
-			var dnsCryptProxyExecutablePath = Path.Combine(Directory.GetCurrentDirectory(), Global.DnsCryptProxyFolder, Global.DnsCryptProxyExecutableName);
+			var dnsCryptProxyExecutablePath = DnsCryptProxyExecutablePath;
 			var result = ProcessHelper.ExecuteWithArguments(dnsCryptProxyExecutablePath, "-list-all -json");
 			if (!result.Success) return resolvers;
 			if (string.IsNullOrEmpty(result.StandardOutput)) return resolvers;
@@ -246,7 +248,7 @@ namespace SimpleDnsCrypt.Helper
 		/// <returns></returns>
 		public static bool Install()
 		{
-			var dnsCryptProxyExecutablePath = Path.Combine(Directory.GetCurrentDirectory(), Global.DnsCryptProxyFolder, Global.DnsCryptProxyExecutableName);
+			var dnsCryptProxyExecutablePath = DnsCryptProxyExecutablePath;
 			var result = ProcessHelper.ExecuteWithArguments(dnsCryptProxyExecutablePath, "-service install");
 			if (result.Success)
 			{
@@ -277,7 +279,7 @@ namespace SimpleDnsCrypt.Helper
 		/// <returns></returns>
 		public static bool Uninstall()
 		{
-			var dnsCryptProxyExecutablePath = Path.Combine(Directory.GetCurrentDirectory(), Global.DnsCryptProxyFolder, Global.DnsCryptProxyExecutableName);
+			var dnsCryptProxyExecutablePath = DnsCryptProxyExecutablePath;
 			var result = ProcessHelper.ExecuteWithArguments(dnsCryptProxyExecutablePath, "-service uninstall");
 			try
 			{
