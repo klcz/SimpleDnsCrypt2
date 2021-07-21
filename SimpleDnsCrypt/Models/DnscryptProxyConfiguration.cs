@@ -3,10 +3,10 @@ using Nett;
 using SimpleDnsCrypt.Config;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using SimpleDnsCrypt.Utils.Models;
 
 // ReSharper disable InconsistentNaming
+#pragma warning disable IDE1006 // Naming Styles
 
 namespace SimpleDnsCrypt.Models
 {
@@ -60,13 +60,23 @@ namespace SimpleDnsCrypt.Models
         private string _proxy;
         private ObservableCollection<string> _disabled_server_names;
         private string _blocked_query_response;
-
+        private Dictionary<string, CustomServer> _customServers;
 
         [TomlIgnore]
         public new bool IsNotifying
         {
             get => base.IsNotifying;
             set => base.IsNotifying = value;
+        }
+
+        public Dictionary<string, CustomServer> @static
+        {
+            get => _customServers ??= new Dictionary<string, CustomServer>();
+            set
+            {
+                _customServers = value;
+                NotifyOfPropertyChange(() => @static);
+            }
         }
 
         /// <summary>
@@ -149,7 +159,7 @@ namespace SimpleDnsCrypt.Models
 
         /// <summary>
         ///		Response for blocked queries.  Options are `refused`, `hinfo` (default) or
-        ///		an IP response.  To give an IP response, use the format `a:<IPv4>,aaaa:<IPv6>`.
+        ///		an IP response.  To give an IP response, use the format `a:&lt;IPv4&gt;,aaaa:&lt;IPv6&gt;`.
         ///		Using the `hinfo` option means that some responses will be lies.
         ///		Unfortunately, the `hinfo` option appears to be required for Android 8+
         /// </summary>
@@ -411,18 +421,15 @@ namespace SimpleDnsCrypt.Models
             get
             {
                 if (string.IsNullOrEmpty(log_file)) return false;
-                //TODO: make Configurable 
-                var logFile = Path.Combine(Directory.GetCurrentDirectory(), Global.LogDirectory, Global.DnsCryptLogFile);
-                return log_file.Equals(logFile);
+                return log_file.Equals(Global.DnsCryptLogFilePath);
             }
             set
             {
                 _log = value;
                 if (value)
                 {
-                    var logFile = Path.Combine(Directory.GetCurrentDirectory(), Global.LogDirectory, Global.DnsCryptLogFile);
                     _log_level = 0;
-                    _log_file = logFile;
+                    _log_file = Global.DnsCryptLogFilePath;
                 }
                 else
                 {
@@ -1031,6 +1038,11 @@ namespace SimpleDnsCrypt.Models
         }
     }
 
+    public class CustomServer
+    {
+        public string Stamp { get; set; }
+    }
+
     public class Source : PropertyChangedBase
     {
         [TomlIgnore]
@@ -1065,3 +1077,4 @@ namespace SimpleDnsCrypt.Models
         public string stamp { get; set; }
     }
 }
+#pragma warning restore IDE1006 // Naming Styles

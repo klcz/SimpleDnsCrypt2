@@ -11,7 +11,7 @@
                       Width="{Binding WindowWidth, Mode=TwoWay}" 
                       Height="{Binding WindowHeight, Mode=TwoWay}" 
                       SizeToContent="WidthAndHeight"
-                      GlowBrush="{DynamicResource AccentColorBrush}"
+                      GlowBrush="{DynamicResource MahApps.Brushes.Accent}"
                       Icon="../Images/simplednscrypt.ico" ShowIconOnTitleBar="False"
                       WindowStartupLocation="CenterScreen" TitleCharacterCasing="Normal" Topmost="False"
                       ShowMaxRestoreButton="False" ResizeMode="CanResizeWithGrip" ShowInTaskbar="True"

@@ -66,7 +66,6 @@ namespace SimpleDnsCrypt.ViewModels
 
         public void AddAddress()
         {
-            if (string.IsNullOrEmpty(_addressInput)) return;
             var validatedAddress = ValidationHelper.ValidateIpEndpoint(_addressInput);
             if (string.IsNullOrEmpty(validatedAddress)) return;
             if (FallbackResolvers.Contains(validatedAddress)) return;

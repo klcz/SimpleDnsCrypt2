@@ -5,15 +5,17 @@ using SimpleDnsCrypt.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Principal;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Input;
+using Reactive.Bindings;
 using WPFLocalizeExtension.Engine;
+using ReactiveCommand = ReactiveUI.ReactiveCommand;
 
 namespace SimpleDnsCrypt.ViewModels
 {
@@ -31,10 +33,15 @@ namespace SimpleDnsCrypt.ViewModels
 
         public LoaderViewModel()
         {
-
+            Failed = new ReactiveProperty<bool>(false);
+            ExitCommand = ReactiveCommand.Create(() => Application.Current.Shutdown());
         }
 
-        private async void InitializeApplication()
+        public ICommand ExitCommand { get; }
+
+        public ReactiveProperty<bool> Failed { get; }
+
+        private async Task InitializeApplication()
         {
             try
             {
@@ -47,42 +54,17 @@ namespace SimpleDnsCrypt.ViewModels
                 {
                     ProgressText =
                         LocalizationEx.GetUiString("loader_administrative_rights_missing", Thread.CurrentThread.CurrentCulture);
-                    await Task.Delay(3000).ConfigureAwait(false);
-                    Process.GetCurrentProcess().Kill();
-                }
-
-                ProgressText = LocalizationEx.GetUiString("loader_redistributable_package_check", Thread.CurrentThread.CurrentCulture);
-                if (PrerequisiteHelper.IsRedistributablePackageInstalled())
-                {
-                    ProgressText = LocalizationEx.GetUiString("loader_redistributable_package_already_installed", Thread.CurrentThread.CurrentCulture);
-                }
-                else
-                {
-                    //Note: if this is disabled, the auto update may not work
-                    if (Properties.Settings.Default.InstallRedistributablePackage)
-                    {
-                        ProgressText = LocalizationEx.GetUiString("loader_redistributable_package_installing",
-                            Thread.CurrentThread.CurrentCulture);
-                        //minisign needs this (to verify the installer with libsodium)
-                        await PrerequisiteHelper.DownloadAndInstallRedistributablePackage();
-                        if (PrerequisiteHelper.IsRedistributablePackageInstalled())
-                        {
-                            ProgressText = LocalizationEx.GetUiString("loader_redistributable_package_ready",
-                                Thread.CurrentThread.CurrentCulture);
-                            await Task.Delay(1000).ConfigureAwait(false);
-                        }
-                    }
+                    Failed.Value = true;
+                    return;
                 }
 
                 ProgressText =
                     string.Format(LocalizationEx.GetUiString("loader_validate_folder", Thread.CurrentThread.CurrentCulture),
-                        Global.DnsCryptProxyFolder);
+                        Global.DnsCryptProxyFolderName);
+
                 var validatedFolder = ValidateDnsCryptProxyFolder();
-                if (validatedFolder.Count == 0)
-                {
-                    ProgressText = LocalizationEx.GetUiString("loader_all_files_available", Thread.CurrentThread.CurrentCulture);
-                }
-                else
+
+                if (validatedFolder.Any())
                 {
                     var fileErrors = "";
                     foreach (var pair in validatedFolder)
@@ -93,71 +75,44 @@ namespace SimpleDnsCrypt.ViewModels
                     ProgressText =
                         string.Format(
                             LocalizationEx.GetUiString("loader_missing_files", Thread.CurrentThread.CurrentCulture).Replace("\\n", "\n"),
-                            Global.DnsCryptProxyFolder, fileErrors, Global.ApplicationName);
-                    await Task.Delay(5000).ConfigureAwait(false);
-                    Process.GetCurrentProcess().Kill();
+                            Global.DnsCryptProxyFolderName, fileErrors, Global.ApplicationName);
+                    Failed.Value = true;
+                    return;
                 }
 
-                if (Properties.Settings.Default.BackupAndRestoreConfigOnUpdate)
-                {
-                    var tmpConfigPath = Path.Combine(Path.GetTempPath(), Global.DnsCryptConfigurationFile + ".bak");
-                    if (File.Exists(tmpConfigPath))
-                    {
-                        ProgressText = string.Format(LocalizationEx.GetUiString("loader_restore_config", Thread.CurrentThread.CurrentCulture),
-                            Global.DnsCryptConfigurationFile);
-                        var configFile = Path.Combine(Directory.GetCurrentDirectory(), Global.DnsCryptProxyFolder, Global.DnsCryptConfigurationFile);
-                        if (File.Exists(configFile))
-                        {
-                            if (File.Exists(configFile + ".bak"))
-                            {
-                                File.Delete(configFile + ".bak");
-                            }
-                            File.Move(configFile, configFile + ".bak");
-                        }
-                        File.Move(tmpConfigPath, configFile);
-                        // update the configuration file
-                        if (PatchHelper.Patch())
-                        {
-                            await Task.Delay(500).ConfigureAwait(false);
-                        }
-                    }
-                }
+                ProgressText = LocalizationEx.GetUiString("loader_all_files_available", Thread.CurrentThread.CurrentCulture);
+
+                PatchHelper.Patch();
 
                 ProgressText = string.Format(LocalizationEx.GetUiString("loader_loading", Thread.CurrentThread.CurrentCulture),
-                    Global.DnsCryptConfigurationFile);
+                    Global.DnsCryptConfigurationFileName);
                 if (DnscryptProxyConfigurationManager.LoadConfiguration())
                 {
                     ProgressText =
                         string.Format(LocalizationEx.GetUiString("loader_successfully_loaded", Thread.CurrentThread.CurrentCulture),
-                            Global.DnsCryptConfigurationFile);
+                            Global.DnsCryptConfigurationFileName);
                     _mainViewModel.DnscryptProxyConfiguration = DnscryptProxyConfigurationManager.DnscryptProxyConfiguration;
                 }
                 else
                 {
                     ProgressText =
                         string.Format(LocalizationEx.GetUiString("loader_failed_loading", Thread.CurrentThread.CurrentCulture),
-                            Global.DnsCryptConfigurationFile);
-                    await Task.Delay(5000).ConfigureAwait(false);
-                    Process.GetCurrentProcess().Kill();
+                            Global.DnsCryptConfigurationFileName);
+                    Failed.Value = true;
+                    return;
                 }
 
                 ProgressText = LocalizationEx.GetUiString("loader_loading_network_cards", Thread.CurrentThread.CurrentCulture);
 
-                List<LocalNetworkInterface> localNetworkInterfaces;
-                if (DnscryptProxyConfigurationManager.DnscryptProxyConfiguration.listen_addresses.Contains(Global.GlobalResolver))
-                {
-                    var dnsServer = new List<string>
+                var dnsServer = DnscryptProxyConfigurationManager.DnscryptProxyConfiguration.listen_addresses.Contains(Global.GlobalResolver)
+                    ? new List<string>
                     {
                         Global.DefaultResolverIpv4,
                         Global.DefaultResolverIpv6
-                    };
-                    localNetworkInterfaces = LocalNetworkInterfaceManager.GetLocalNetworkInterfaces(dnsServer);
-                }
-                else
-                {
-                    localNetworkInterfaces = LocalNetworkInterfaceManager.GetLocalNetworkInterfaces(
-                        DnscryptProxyConfigurationManager.DnscryptProxyConfiguration.listen_addresses.ToList());
-                }
+                    }
+                    : DnscryptProxyConfigurationManager.DnscryptProxyConfiguration.listen_addresses.ToList();
+                var localNetworkInterfaces = LocalNetworkInterfaceManager.GetLocalNetworkInterfaces(dnsServer);
+
                 _mainViewModel.LocalNetworkInterfaces = new BindableCollection<LocalNetworkInterface>();
                 _mainViewModel.LocalNetworkInterfaces.AddRange(localNetworkInterfaces);
                 _mainViewModel.Initialize();
@@ -185,11 +140,12 @@ namespace SimpleDnsCrypt.ViewModels
             catch (Exception exception)
             {
                 Log.Error(exception);
+                Failed.Value = true;
             }
         }
 
         [ImportingConstructor]
-        public LoaderViewModel(IWindowManager windowManager, IEventAggregator events)
+        public LoaderViewModel(IWindowManager windowManager, IEventAggregator events) : this()
         {
             if (Properties.Settings.Default.UpgradeRequired)
             {
@@ -236,8 +192,9 @@ namespace SimpleDnsCrypt.ViewModels
                 SelectedLanguage = selectedLanguage
             };
             _systemTrayViewModel = new SystemTrayViewModel(_windowManager, _events, _mainViewModel);
+            Failed = new ReactiveProperty<bool>(false);
 
-            InitializeApplication();
+            _ = InitializeApplication();
         }
 
         public string TitleText
@@ -286,25 +243,13 @@ namespace SimpleDnsCrypt.ViewModels
             var report = new Dictionary<string, string>();
             foreach (var proxyFile in Global.DnsCryptProxyFiles)
             {
-                var proxyFilePath = Path.Combine(Directory.GetCurrentDirectory(), Global.DnsCryptProxyFolder, proxyFile);
+                var proxyFilePath = Path.Combine(Global.DnsCryptFolderPath, proxyFile);
                 if (!File.Exists(proxyFilePath))
                 {
                     report[proxyFile] = LocalizationEx.GetUiString("loader_missing", Thread.CurrentThread.CurrentCulture);
                 }
-                // exclude this check on dev folders
-
-                if (proxyFilePath.Contains("bin\\Debug") || proxyFilePath.Contains("bin\\Release") || proxyFilePath.Contains("bin\\x64")) continue;
-                // dnscrypt-resolvers.* files are signed with minisign
-                //TODO: re-enable
-                /*if (!proxyFile.Equals("dnscrypt-proxy.toml") && !proxyFile.Equals("LICENSE"))
-				{
-					// check if the file is signed
-					if (!AuthenticodeTools.IsTrusted(proxyFilePath))
-					{
-						report[proxyFile] = LocalizationEx.GetUiString("loader_unsigned", Thread.CurrentThread.CurrentCulture);
-					}
-				}*/
             }
+
             return report;
         }
     }

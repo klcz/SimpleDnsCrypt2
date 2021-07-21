@@ -7,6 +7,8 @@ namespace SimpleDnsCrypt.Converters
 {
     public class BoolToVisibilityCollapsedConverter : IValueConverter
     {
+        public static readonly BoolToVisibilityCollapsedConverter Instance = new BoolToVisibilityCollapsedConverter();
+
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             try

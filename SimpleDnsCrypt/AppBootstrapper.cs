@@ -20,7 +20,7 @@ namespace SimpleDnsCrypt
     {
         private CompositionContainer _container;
         private static readonly ILog Log = LogManagerHelper.Factory();
-        private static Mutex _mutex = null;
+        private static Mutex _mutex;
 
         public AppBootstrapper()
         {
@@ -82,12 +82,9 @@ namespace SimpleDnsCrypt
                     Application.Current.Shutdown();
                 }
 
-                if (e.Args.Length == 1)
+                if (e.Args is ["-debug"])
                 {
-                    if (e.Args[0].Equals("-debug"))
-                    {
-                        LogMode.Debug = true;
-                    }
+                    LogMode.Debug = true;
                 }
 
                 var loader = _container.GetExportedValue<LoaderViewModel>();
@@ -103,10 +100,9 @@ namespace SimpleDnsCrypt
         protected override void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
             Log.Error(e.Exception);
-            Execute.OnUIThread(
-                () =>
-                    MessageBox.Show(
-                        "There was an UnhandledException. Check the log entries for further information.", "Error", MessageBoxButton.OK, MessageBoxImage.Error));
+            Execute.OnUIThread(() => MessageBox.Show(
+                "There was an UnhandledException. Check the log entries for further information.",
+                "Error", MessageBoxButton.OK, MessageBoxImage.Error));
         }
     }
 }

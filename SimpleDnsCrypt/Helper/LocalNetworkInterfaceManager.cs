@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
+using System.Net.Sockets;
 
 namespace SimpleDnsCrypt.Helper
 {
@@ -41,25 +42,34 @@ namespace SimpleDnsCrypt.Helper
 
                 if (!showHiddenCards)
                 {
-                    var add = true;
-                    foreach (var blacklistEntry in Global.NetworkInterfaceBlacklist)
-                    {
-                        if (nic.Description.Contains(blacklistEntry) || nic.Name.Contains(blacklistEntry))
-                        {
-                            add = false;
-                        }
-                    }
+                    var add = Global.NetworkInterfaceBlacklist
+                        .All(blacklistEntry => !nic.Description.Contains(blacklistEntry) && 
+                                               !nic.Name.Contains(blacklistEntry));
                     if (!add) continue;
                 }
+
+                var addressList = nic.GetIPProperties()
+                    .UnicastAddresses
+                    .Select(x => x.Address)
+                    .Where(x => x.AddressFamily is AddressFamily.InterNetwork or AddressFamily.InterNetworkV6)
+                    .OrderBy(x => x.AddressFamily)
+                    .ToList();
+                var ipAddressString = string.Join(", ", addressList.Take(3));
+                if (addressList.Count > 3)
+                {
+                    ipAddressString += "...";
+                }
+
                 var localNetworkInterface = new LocalNetworkInterface
                 {
                     Name = nic.Name,
-                    Description = nic.Description,
+                    Description = string.Join("\n", nic.Description, $"Addresses: {ipAddressString}"),
                     Type = nic.NetworkInterfaceType,
                     Dns = GetDnsServerList(nic.Id),
                     Ipv4Support = nic.Supports(NetworkInterfaceComponent.IPv4),
                     Ipv6Support = nic.Supports(NetworkInterfaceComponent.IPv6),
-                    OperationalStatus = nic.OperationalStatus
+                    OperationalStatus = nic.OperationalStatus,
+                    IpAddresses = ipAddressString,
                 };
                 // strict check if the interface supports IPv6
                 localNetworkInterface.UseDnsCrypt = IsUsingDnsCrypt(listenAddresses, localNetworkInterface, localNetworkInterface.Ipv6Support);
@@ -78,18 +88,16 @@ namespace SimpleDnsCrypt.Helper
         public static bool IsUsingDnsCrypt(List<string> listenAddresses, LocalNetworkInterface localNetworkInterface, bool strictCheck = false)
         {
             if (listenAddresses == null) return false;
-            var addressOnly = (from listenAddress in listenAddresses let lastIndex = listenAddress.LastIndexOf(":", StringComparison.Ordinal) select listenAddress.Substring(0, lastIndex).Replace("[", "").Replace("]", "")).ToList();
+            var addressOnly = (from listenAddress in listenAddresses let lastIndex = listenAddress.LastIndexOf(":", StringComparison.Ordinal) select listenAddress.Substring(0, lastIndex).Replace("[", "").Replace("]", "")).ToHashSet();
 
             if (strictCheck)
             {
                 // check for ALL addresses
-                return addressOnly.Intersect(localNetworkInterface.Dns.Select(x => x.Address).ToList()).Count() == addressOnly.Count;
+                return addressOnly.IsSubsetOf(localNetworkInterface.Dns.Select(x => x.Address));
             }
 
-            return localNetworkInterface.Dns.Any(d => addressOnly.Contains(d.Address));
+            return addressOnly.Overlaps(localNetworkInterface.Dns.Select(x => x.Address));
         }
-
-
 
         /// <summary>
         ///     Get the nameservers of an interface.
@@ -142,17 +150,15 @@ namespace SimpleDnsCrypt.Helper
         /// </summary>
         /// <param name="unconvertedServers"></param>
         /// <returns></returns>
-        public static List<DnsServer> ConvertToDnsList(List<string> unconvertedServers)
+        public static List<DnsServer> ConvertToDnsList(IEnumerable<string> unconvertedServers)
         {
-            return (from unconvertedServer in unconvertedServers
-                    let lastIndex = unconvertedServer.LastIndexOf(":", StringComparison.Ordinal)
-                    select unconvertedServer.Substring(0, lastIndex)
-                into addressOnly
-                    select new DnsServer
-                    {
-                        Address = addressOnly.Replace("[", "").Replace("]", ""),
-                        Type = addressOnly.Contains(":") ? NetworkInterfaceComponent.IPv6 : NetworkInterfaceComponent.IPv4
-                    }).ToList();
+            return unconvertedServers
+                .Select(unconvertedServer => unconvertedServer[..unconvertedServer.LastIndexOf(":", StringComparison.Ordinal)].Replace("[", null).Replace("]", null))
+                .Select(addressOnly => new DnsServer
+                {
+                    Address = addressOnly,
+                    Type = addressOnly.Contains(":") ? NetworkInterfaceComponent.IPv6 : NetworkInterfaceComponent.IPv4
+                }).ToList();
         }
 
         public static bool UnsetNameservers(LocalNetworkInterface localNetworkInterface)
@@ -166,16 +172,13 @@ namespace SimpleDnsCrypt.Helper
         /// <param name="localNetworkInterface"></param>
         /// <param name="dnsServers"></param>
         /// <returns></returns>
-        public static bool SetNameservers(LocalNetworkInterface localNetworkInterface, List<DnsServer> dnsServers)
+        public static bool SetNameservers(this LocalNetworkInterface localNetworkInterface, List<DnsServer> dnsServers)
         {
             try
             {
-                if (dnsServers == null)
-                {
-                    dnsServers = new List<DnsServer>();
-                }
+                dnsServers ??= new List<DnsServer>();
 
-                var delete4 = ProcessHelper.ExecuteWithArguments("netsh", "interface ipv4 delete dns \"" + localNetworkInterface.Name + "\" all");
+                var delete4 = ProcessHelper.ExecuteWithArguments("netsh", $"interface ipv4 delete dns \"{localNetworkInterface.Name}\" all");
                 if (delete4 != null)
                 {
                     if (!delete4.Success)
@@ -188,7 +191,7 @@ namespace SimpleDnsCrypt.Helper
                     Log.Warn("failed to delete DNS (IPv4)");
                 }
 
-                var delete6 = ProcessHelper.ExecuteWithArguments("netsh", "interface ipv6 delete dns \"" + localNetworkInterface.Name + "\" all");
+                var delete6 = ProcessHelper.ExecuteWithArguments("netsh", $"interface ipv6 delete dns \"{localNetworkInterface.Name}\" all");
                 if (delete6 != null)
                 {
                     if (!delete6.Success)
@@ -205,7 +208,7 @@ namespace SimpleDnsCrypt.Helper
                 {
                     if (dnsServer.Type == NetworkInterfaceComponent.IPv4)
                     {
-                        var add4 = ProcessHelper.ExecuteWithArguments("netsh", "interface ipv4 add dns \"" + localNetworkInterface.Name + "\" " + dnsServer.Address + " validate=no");
+                        var add4 = ProcessHelper.ExecuteWithArguments("netsh", $"interface ipv4 add dns \"{localNetworkInterface.Name}\" {dnsServer.Address} validate=no");
                         if (add4 != null)
                         {
                             if (!add4.Success)
@@ -220,7 +223,7 @@ namespace SimpleDnsCrypt.Helper
                     }
                     else
                     {
-                        var add6 = ProcessHelper.ExecuteWithArguments("netsh", "interface ipv6 add dns \"" + localNetworkInterface.Name + "\" " + dnsServer.Address + " validate=no");
+                        var add6 = ProcessHelper.ExecuteWithArguments("netsh", $"interface ipv6 add dns \"{localNetworkInterface.Name}\" {dnsServer.Address} validate=no");
                         if (add6 != null)
                         {
                             if (!add6.Success)

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -10,64 +9,62 @@ namespace SimpleDnsCrypt.Utils
 {
     public static class DomainBlacklist
     {
-        public static async Task<SortedSet<string>> Build(List<string> blacklistsSource, List<string> whitelistSource = null)
+        public static async Task<SortedSet<string>> Build(IEnumerable<string> blacklist, IEnumerable<string> whitelist)
         {
-            var blacklist = new SortedSet<string>();
-            var whitelist = new SortedSet<string>(whitelistSource);
-            foreach (var blacklistSourceEntry in blacklistsSource)
+            var sortedRules = new SortedSet<string>();
+            foreach (var blacklistEntry in blacklist)
             {
-                if (blacklistSourceEntry.StartsWith("file:"))
+                if (blacklistEntry.StartsWith("file:", StringComparison.Ordinal))
                 {
-                    var filename = blacklistSourceEntry.Split(new[] { "file:" }, StringSplitOptions.None)[1];
-                    if (string.IsNullOrEmpty(filename)) continue;
-                    if (!File.Exists(filename)) continue;
+                    var filename = blacklistEntry["file:".Length..];
+                    if (string.IsNullOrEmpty(filename) || 
+                        !File.Exists(filename))
+                    {
+                        continue;
+                    }
                     var rawListString = await File.ReadAllLinesAsync(filename);
                     var parsed = ParseBlacklist(rawListString, true);
                     foreach (var p in parsed)
                     {
-                        blacklist.Add(p);
+                        sortedRules.Add(p);
                     }
                 }
                 else
                 {
-                    var rawListString = await FetchRemoteListAsync(blacklistSourceEntry);
+                    var rawListString = await FetchRemoteListAsync(blacklistEntry);
                     if (rawListString == null) continue;
                     var parsed = ParseBlacklist(rawListString, false);
                     foreach (var p in parsed)
                     {
-                        blacklist.Add(p);
+                        sortedRules.Add(p);
                     }
                 }
             }
 
-            blacklist.ExceptWith(whitelist);
-            return blacklist;
+            sortedRules.ExceptWith(whitelist);
+            return sortedRules;
         }
 
         private static async Task<string> FetchRemoteListAsync(string requestUri)
         {
             try
             {
-                using (var client = new HttpClient())
-                {
-                    var getDataTask = client.GetStringAsync(requestUri);
-                    return await getDataTask.ConfigureAwait(false);
-                }
+                using var client = new HttpClient();
+                return await client.GetStringAsync(requestUri).ConfigureAwait(false);
             }
-            catch (Exception)
+            catch
             {
-
             }
             return null;
         }
 
-        public static IEnumerable<string> ParseBlacklist(string blacklist, bool trusted = false)
+        public static IEnumerable<string> ParseBlacklist(string blacklist, bool trusted)
         {
             var lines = blacklist.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             return ParseBlacklist(lines, trusted);
         }
 
-        public static IEnumerable<string> ParseBlacklist(IEnumerable<string> lines, bool trusted = false)
+        public static IEnumerable<string> ParseBlacklist(IEnumerable<string> lines, bool trusted)
         {
             var names = new List<string>();
             var rxComment = new Regex(@"^(#|$)");

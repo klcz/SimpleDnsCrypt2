@@ -46,7 +46,7 @@ namespace SimpleDnsCrypt.ViewModels
             else
             {
                 //set default
-                _queryLogFile = Path.Combine(Directory.GetCurrentDirectory(), Global.DnsCryptProxyFolder, Global.QueryLogFileName);
+                _queryLogFile = Path.Combine(Global.DnsCryptFolderPath, Global.QueryLogFileName);
                 Properties.Settings.Default.QueryLogFile = _queryLogFile;
                 Properties.Settings.Default.Save();
             }
@@ -205,26 +205,7 @@ namespace SimpleDnsCrypt.ViewModels
                         DnscryptProxyConfigurationManager.DnscryptProxyConfiguration = dnscryptProxyConfiguration;
                         if (DnscryptProxyConfigurationManager.SaveConfiguration())
                         {
-                            if (DnsCryptProxyManager.IsDnsCryptProxyInstalled())
-                            {
-                                if (DnsCryptProxyManager.IsDnsCryptProxyRunning())
-                                {
-                                    await DnsCryptProxyManager.Restart().ConfigureAwait(false);
-                                }
-                                else
-                                {
-                                    await DnsCryptProxyManager.Start().ConfigureAwait(false);
-                                }
-                            }
-                            else
-                            {
-                                await Task.Run(() => DnsCryptProxyManager.Install()).ConfigureAwait(false);
-                                await Task.Delay(Global.ServiceInstallTime).ConfigureAwait(false);
-                                if (DnsCryptProxyManager.IsDnsCryptProxyInstalled())
-                                {
-                                    await DnsCryptProxyManager.Start().ConfigureAwait(false);
-                                }
-                            }
+                            await DnsCryptProxyManager.RestartIfRunning().ConfigureAwait(false);
                         }
                     }
 
@@ -233,33 +214,30 @@ namespace SimpleDnsCrypt.ViewModels
                         {
                             await Task.Run(() =>
                             {
-                                using (var reader = new StreamReader(new FileStream(_queryLogFile,
-                                    FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+                                using var reader = new StreamReader(new FileStream(_queryLogFile,
+                                    FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+                                //start at the end of the file
+                                var lastMaxOffset = reader.BaseStream.Length;
+
+                                while (_isQueryLogLogging)
                                 {
-                                    //start at the end of the file
-                                    var lastMaxOffset = reader.BaseStream.Length;
+                                    Thread.Sleep(500);
+                                    //if the file size has not changed, idle
+                                    if (reader.BaseStream.Length == lastMaxOffset)
+                                        continue;
 
-                                    while (_isQueryLogLogging)
+                                    //seek to the last max offset
+                                    reader.BaseStream.Seek(lastMaxOffset, SeekOrigin.Begin);
+
+                                    //read out of the file until the EOF
+                                    while (reader.ReadLine() is { } line)
                                     {
-                                        Thread.Sleep(500);
-                                        //if the file size has not changed, idle
-                                        if (reader.BaseStream.Length == lastMaxOffset)
-                                            continue;
-
-                                        //seek to the last max offset
-                                        reader.BaseStream.Seek(lastMaxOffset, SeekOrigin.Begin);
-
-                                        //read out of the file until the EOF
-                                        string line;
-                                        while ((line = reader.ReadLine()) != null)
-                                        {
-                                            var queryLogLine = new QueryLogLine(line);
-                                            AddLogLine(queryLogLine);
-                                        }
-
-                                        //update the last max offset
-                                        lastMaxOffset = reader.BaseStream.Position;
+                                        var queryLogLine = new QueryLogLine(line);
+                                        AddLogLine(queryLogLine);
                                     }
+
+                                    //update the last max offset
+                                    lastMaxOffset = reader.BaseStream.Position;
                                 }
                             }).ConfigureAwait(false);
                         }
@@ -283,7 +261,7 @@ namespace SimpleDnsCrypt.ViewModels
                         DnscryptProxyConfigurationManager.DnscryptProxyConfiguration = dnscryptProxyConfiguration;
                         if (DnscryptProxyConfigurationManager.SaveConfiguration())
                         {
-                            await DnsCryptProxyManager.Restart().ConfigureAwait(false);
+                            await DnsCryptProxyManager.RestartIfRunning().ConfigureAwait(false);
                         }
                     }
                     Execute.OnUIThread(() => { QueryLogLines.Clear(); });

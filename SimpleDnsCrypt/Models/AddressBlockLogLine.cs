@@ -11,13 +11,6 @@ namespace SimpleDnsCrypt.Models
 
         public AddressBlockLogLine(string line)
         {
-            try
-            {
-
-            }
-            catch (Exception)
-            {
-            }
         }
     }
 }

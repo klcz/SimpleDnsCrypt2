@@ -1,30 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{1A9CA4FE-BDD5-4D7C-A86A-7ED503974718}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5-windows</TargetFramework>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <AssemblyTitle>Uninstall</AssemblyTitle>
-    <Product>Uninstall</Product>
-    <Description>Uninstaller for Simple DNSCrypt</Description>
-    <Copyright>Copyright © 2015 - 2019 Christian Hermann</Copyright>
-    <AssemblyVersion>0.2.5</AssemblyVersion>
-    <FileVersion>0.2.5</FileVersion>
+    <TargetFramework>net8-windows10.0.19041</TargetFramework>
+    <AssemblyTitle>Uninstall helper for Simple DNSCrypt</AssemblyTitle>
+    <Product>Uninstall helper for Simple DNSCrypt</Product>
+    <Description>Uninstall helper for Simple DNSCrypt</Description>
+    <Copyright>Copyright © 2015 - 2020 Christian Hermann, 2021 - 2023 instant.sc</Copyright>
+    <AssemblyVersion>0.8.2</AssemblyVersion>
+    <FileVersion>0.8.2</FileVersion>
     <ApplicationIcon>simplednscrypt.ico</ApplicationIcon>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
     <None Include="Properties\app.manifest" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="simplednscrypt.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="5.0.0" />
-    <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
-    <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
 </Project>

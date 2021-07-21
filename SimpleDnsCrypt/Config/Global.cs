@@ -1,4 +1,8 @@
-﻿namespace SimpleDnsCrypt.Config
+﻿using System;
+using System.IO;
+using System.Reflection;
+
+namespace SimpleDnsCrypt.Config
 {
     public static class Global
     {
@@ -8,34 +12,25 @@
         public const string ApplicationName = "Simple DNSCrypt";
 
         /// <summary>
-        /// Microsoft Visual C++ Redistributable for Visual Studio 2015 - 2019 (x86)
-        /// </summary>
-        public const string RedistributablePackage86 = "https://aka.ms/vs/16/release/VC_redist.x86.exe";
-
-        /// <summary>
-        /// Microsoft Visual C++ Redistributable for Visual Studio 2015 - 2019 (x64)
-        /// </summary>
-        public const string RedistributablePackage64 = "https://aka.ms/vs/16/release/VC_redist.x64.exe";
-
-        /// <summary>
         ///		Output folder for logs.
         /// </summary>
-        public const string LogDirectory = "logs";
+        public const string LogDirectoryName = "logs";
 
         /// <summary>
         ///     The folder where the dnscrypt-proxy lives in.
         /// </summary>
-        public const string DnsCryptProxyFolder = "dnscrypt-proxy";
+        public const string DnsCryptProxyFolderName = "dnscrypt-proxy";
 
         public const string DnsCryptProxyExecutableName86 = "dnscrypt-proxy86.exe";
         public const string DnsCryptProxyExecutableName64 = "dnscrypt-proxy64.exe";
 
-        public const string DnsCryptConfigurationFile = "dnscrypt-proxy.toml";
+        public const string DnsCryptConfigurationFileName = "dnscrypt-proxy.toml";
+        public const string DnsCryptExampleConfigurationFileName = DnsCryptConfigurationFileName + ".example";
 
         /// <summary>
         ///		Logfile name of dnscrypt-proxy.
         /// </summary>
-        public const string DnsCryptLogFile = "dnscrypt-proxy.log";
+        public const string DnsCryptLogFileName = "dnscrypt-proxy.log";
 
         /// <summary>
         ///     Time we wait on a service start (ms).
@@ -87,7 +82,7 @@
         {
             DnsCryptProxyExecutableName64,
             DnsCryptProxyExecutableName86,
-            "dnscrypt-proxy.toml",
+            DnsCryptExampleConfigurationFileName,
             "LICENSE"
         };
 
@@ -111,5 +106,19 @@
             "Virtueller Microsoft-Adapter",
             "TAP"
         };
+
+        public static string InstallPath { get; } = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+        public static string DnsCryptFolderPath { get; } = Path.Combine(InstallPath, DnsCryptProxyFolderName);
+
+        public static string DnsCryptProxyExecutablePath { get; } = Path.Combine(DnsCryptFolderPath,
+            Environment.Is64BitOperatingSystem
+                ? DnsCryptProxyExecutableName64
+                : DnsCryptProxyExecutableName86);
+
+        public static string DnsCryptConfigurationVersionFilePath { get; } = Path.Combine(DnsCryptFolderPath, "configVersion.txt");
+        public static string DnsCryptConfigurationFilePath { get; } = Path.Combine(DnsCryptFolderPath, DnsCryptConfigurationFileName);
+        public static string DnsCryptExampleConfigurationFilePath { get; } = Path.Combine(DnsCryptFolderPath, DnsCryptExampleConfigurationFileName);
+        public static string DnsCryptLogFilePath { get; } = Path.Combine(InstallPath, LogDirectoryName, DnsCryptLogFileName);
     }
 }

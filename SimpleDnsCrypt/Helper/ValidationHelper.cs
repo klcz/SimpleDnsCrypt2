@@ -9,6 +9,11 @@ namespace SimpleDnsCrypt.Helper
 
         public static string ValidateIpEndpoint(string endpoint)
         {
+            if (string.IsNullOrEmpty(endpoint))
+            {
+                return null;
+            }
+
             try
             {
                 var ipEndPoint = CreateIpEndPoint(endpoint);

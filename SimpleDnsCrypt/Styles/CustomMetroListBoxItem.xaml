@@ -24,8 +24,8 @@
 
             <Trigger Property="IsSelected" Value="True">
                 <Setter Property="Cursor" Value="Hand" />
-                <Setter Property="Background" Value="{DynamicResource AccentColorBrush}" />
-                <Setter Property="Foreground" Value="{DynamicResource AccentSelectedColorBrush}" />
+                <Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Accent}" />
+                <Setter Property="Foreground" Value="{DynamicResource MahApps.Brushes.Selected.Foreground}" />
             </Trigger>
             <Trigger Property="IsSelected" Value="False">
                 <Setter Property="Cursor" Value="Hand" />

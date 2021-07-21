@@ -35,7 +35,7 @@ namespace SimpleDnsCrypt.Models
                     Message = parts[3].Split(new[] { ":" }, StringSplitOptions.RemoveEmptyEntries)[1].Trim();
                 }
             }
-            catch (Exception)
+            catch
             {
             }
         }
