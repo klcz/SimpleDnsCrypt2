@@ -4,7 +4,7 @@
     <Style x:Key="CustomAccentedSquareButtonStyle"
            BasedOn="{StaticResource MahApps.Styles.Button.Dialogs.Accent}"
            TargetType="{x:Type Button}">
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="BorderBrush" Value="DimGray"/>
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="DimGray" />
     </Style>
 </ResourceDictionary>
