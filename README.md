@@ -1,6 +1,6 @@
 [![license](https://img.shields.io/github/license/instantsc/SimpleDnsCrypt.svg?style=flat-square)](https://github.com/instantsc/SimpleDnsCrypt/blob/master/LICENSE.md) 
 [![Github All Releases](https://img.shields.io/github/release/instantsc/SimpleDnsCrypt.svg?style=flat-square&include_prereleases)](https://github.com/instantsc/SimpleDnsCrypt/releases/latest) 
-[![dnscrypt--proxy](https://img.shields.io/badge/dnscrypt--proxy-2.1.1-orange.svg?style=flat-square)](https://github.com/jedisct1/dnscrypt-proxy) 
+[![dnscrypt--proxy](https://img.shields.io/badge/dnscrypt--proxy-2.1.2-orange.svg?style=flat-square)](https://github.com/jedisct1/dnscrypt-proxy) 
 [![Github All Releases](https://img.shields.io/github/downloads/instantsc/SimpleDnsCrypt/total.svg?style=flat-square)](https://github.com/instantsc/SimpleDnsCrypt/releases/latest) 
 
 
@@ -18,7 +18,7 @@ Simple DNSCrypt is a simple management tool to configure [dnscrypt-proxy](https:
 
 ## Status
 
-Uses dnscrypt-proxy: **2.1.1**
+Uses dnscrypt-proxy: **2.1.2**
 
 
 ## Getting Started
@@ -63,8 +63,8 @@ For now, the only update option is to download and install the newest version ma
 
 ## Built With
 
-* [Visual Studio 2019](https://www.visualstudio.com/downloads/)
-* [.NET 5](https://dotnet.microsoft.com/download/dotnet)
+* [Visual Studio 2022](https://www.visualstudio.com/downloads/)
+* [.NET 6](https://dotnet.microsoft.com/download/dotnet)
 * [WiX](https://wixtoolset.org/)
 
 ## Authors
