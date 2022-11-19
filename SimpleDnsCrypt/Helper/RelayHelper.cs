@@ -15,7 +15,7 @@ namespace SimpleDnsCrypt.Helper
         public static List<StampFileEntry> GetRelays()
         {
             var relays = new List<StampFileEntry>();
-            var relayFile = Path.Combine(Directory.GetCurrentDirectory(), Global.DnsCryptProxyFolder, "relays.md");
+            var relayFile = Path.Combine(Global.DnsCryptFolderPath, "relays.md");
             try
             {
                 if (File.Exists(relayFile))

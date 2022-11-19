@@ -422,18 +422,15 @@ namespace SimpleDnsCrypt.Models
             get
             {
                 if (string.IsNullOrEmpty(log_file)) return false;
-                //TODO: make Configurable 
-                var logFile = Path.Combine(Directory.GetCurrentDirectory(), Global.LogDirectory, Global.DnsCryptLogFile);
-                return log_file.Equals(logFile);
+                return log_file.Equals(Global.DnsCryptLogFilePath);
             }
             set
             {
                 _log = value;
                 if (value)
                 {
-                    var logFile = Path.Combine(Directory.GetCurrentDirectory(), Global.LogDirectory, Global.DnsCryptLogFile);
                     _log_level = 0;
-                    _log_file = logFile;
+                    _log_file = Global.DnsCryptLogFilePath;
                 }
                 else
                 {

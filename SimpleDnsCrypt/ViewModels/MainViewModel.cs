@@ -19,9 +19,12 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
+using ReactiveUI;
 using SimpleDnsCrypt.Utils.Models;
+using ReactiveCommand = ReactiveUI.ReactiveCommand;
 using TabControl = System.Windows.Controls.TabControl;
 
 namespace SimpleDnsCrypt.ViewModels
@@ -120,6 +123,11 @@ namespace SimpleDnsCrypt.ViewModels
                .ObserveOnUIDispatcher()
                .Subscribe(_ => CollectionViewSource.GetDefaultView(Resolvers).Refresh());
             _relays = new BindableCollection<StampFileEntry>();
+            UninstallServiceCommand = ReactiveCommand.CreateFromTask(UninstallService);
+            InstallServiceCommand = ReactiveCommand.CreateFromTask(InstallService,
+                this.ObservableForProperty(x => x.IsWorkingOnService, x => !x, true));
+            SaveLocalServersCommand = ReactiveCommand.CreateFromTask(SaveLocalServers);
+            AddCustomResolverFromStampCommand = ReactiveCommand.CreateFromTask(AddCustomResolverFromStamp);
         }
 
         public Tabs SelectedTab { get; set; }
@@ -821,18 +829,12 @@ namespace SimpleDnsCrypt.ViewModels
                 if (DnscryptProxyConfigurationManager.SaveConfiguration())
                 {
                     _dnscryptProxyConfiguration = DnscryptProxyConfigurationManager.DnscryptProxyConfiguration;
-                    IsWorkingOnService = true;
+                    using var ws = new WorkingOnService(this);
+
                     if (DnsCryptProxyManager.IsDnsCryptProxyInstalled())
                     {
                         IsServiceInstalled = true;
-                        if (DnsCryptProxyManager.IsDnsCryptProxyRunning())
-                        {
-                            await DnsCryptProxyManager.Restart().ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            await DnsCryptProxyManager.Start().ConfigureAwait(false);
-                        }
+                        await DnsCryptProxyManager.RestartIfRunning().ConfigureAwait(false);
                     }
                     else
                     {
@@ -850,13 +852,12 @@ namespace SimpleDnsCrypt.ViewModels
             finally
             {
                 IsSavingConfiguration = false;
-                IsWorkingOnService = false;
             }
         }
 
         private async Task HandleService()
         {
-            IsWorkingOnService = true;
+            using var ws = new WorkingOnService(this);
             if (IsResolverRunning)
             {
                 // service is running, stop it
@@ -869,32 +870,21 @@ namespace SimpleDnsCrypt.ViewModels
                 if (DnsCryptProxyManager.IsDnsCryptProxyInstalled())
                 {
                     IsServiceInstalled = true;
-                    // service is installed, just start them
                     await DnsCryptProxyManager.Start().ConfigureAwait(false);
                     _isResolverRunning = DnsCryptProxyManager.IsDnsCryptProxyRunning();
                     NotifyOfPropertyChange(() => IsResolverRunning);
                 }
-                else
-                {
-                    //install and start the service
-                    await Task.Run(() => DnsCryptProxyManager.Install()).ConfigureAwait(false);
-                    await Task.Delay(Global.ServiceInstallTime).ConfigureAwait(false);
-                    if (DnsCryptProxyManager.IsDnsCryptProxyInstalled())
-                    {
-                        IsServiceInstalled = true;
-                        await DnsCryptProxyManager.Start().ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        IsServiceInstalled = false;
-                    }
-
-                    _isResolverRunning = DnsCryptProxyManager.IsDnsCryptProxyRunning();
-                    NotifyOfPropertyChange(() => IsResolverRunning);
-                }
             }
+        }
 
-            IsWorkingOnService = false;
+        public ICommand InstallServiceCommand { get; }
+
+        private async Task<bool> InstallService()
+        {
+            using var ws = new WorkingOnService(this);
+            await Task.Run(DnsCryptProxyManager.Install).ConfigureAwait(false);
+            await Task.Delay(Global.ServiceInstallTime).ConfigureAwait(false);
+            return IsServiceInstalled = DnsCryptProxyManager.IsDnsCryptProxyInstalled();
         }
 
         /// <summary>
@@ -977,7 +967,7 @@ namespace SimpleDnsCrypt.ViewModels
         {
             try
             {
-                var logDirectory = Path.Combine(Directory.GetCurrentDirectory(), Global.LogDirectory);
+                var logDirectory = Path.Combine(Global.InstallPath, Global.LogDirectoryName);
                 if (!Directory.Exists(logDirectory))
                 {
                     Directory.CreateDirectory(logDirectory);
@@ -1004,7 +994,9 @@ namespace SimpleDnsCrypt.ViewModels
 
         #region Resolvers
 
-        public async Task SaveLocalServers()
+        public ICommand SaveLocalServersCommand { get; }
+
+        private async Task SaveLocalServers()
         {
             if (_resolvers.Any(x => x.IsInServerList))
             {
@@ -1021,7 +1013,9 @@ namespace SimpleDnsCrypt.ViewModels
             }
         }
 
-        public async Task AddCustomResolverFromStamp()
+        public ICommand AddCustomResolverFromStampCommand { get; }
+
+        private async Task AddCustomResolverFromStamp()
         {
             var customResolverViewModel = new AddCustomResolverViewModel { ExistingNames = _resolvers.Select(x => x.Name).ToHashSet() };
             dynamic settings = new ExpandoObject();
@@ -1094,10 +1088,7 @@ namespace SimpleDnsCrypt.ViewModels
                         _dnscryptProxyConfiguration.anonymized_dns.routes[oldRoute].via = new ObservableCollection<string>();
                         foreach (var stampFileEntry in RouteViewModel.Route)
                         {
-                            if (_dnscryptProxyConfiguration.anonymized_dns.routes[oldRoute].via == null)
-                            {
-                                _dnscryptProxyConfiguration.anonymized_dns.routes[oldRoute].via = new ObservableCollection<string>();
-                            }
+                            _dnscryptProxyConfiguration.anonymized_dns.routes[oldRoute].via ??= new ObservableCollection<string>();
                             _dnscryptProxyConfiguration.anonymized_dns.routes[oldRoute].via.Add(stampFileEntry.Name);
                         }
                     }
@@ -1114,14 +1105,8 @@ namespace SimpleDnsCrypt.ViewModels
                             newRoute.via.Add(stampFileEntry.Name);
                         }
 
-                        if (_dnscryptProxyConfiguration.anonymized_dns == null)
-                        {
-                            _dnscryptProxyConfiguration.anonymized_dns = new AnonymizedDns();
-                        }
-                        if (_dnscryptProxyConfiguration.anonymized_dns.routes == null)
-                        {
-                            _dnscryptProxyConfiguration.anonymized_dns.routes = new List<Route>();
-                        }
+                        _dnscryptProxyConfiguration.anonymized_dns ??= new AnonymizedDns();
+                        _dnscryptProxyConfiguration.anonymized_dns.routes ??= new List<Route>();
                         _dnscryptProxyConfiguration.anonymized_dns.routes.Add(newRoute);
                     }
                     SaveDnsCryptConfiguration();
@@ -1251,10 +1236,12 @@ namespace SimpleDnsCrypt.ViewModels
 
         #region Advanced Settings
 
+        public ICommand UninstallServiceCommand { get; }
+
         /// <summary>
         ///     Uninstall the installed dnscrypt-proxy service.
         /// </summary>
-        public async Task UninstallService()
+        private async Task UninstallService()
         {
             var result = await _windowManager.ShowMetroMessageBox(
                 LocalizationEx.GetUiString("dialog_message_uninstall", Thread.CurrentThread.CurrentCulture),
@@ -1372,8 +1359,22 @@ namespace SimpleDnsCrypt.ViewModels
             DnscryptProxyConfiguration.fallback_resolvers = validatedFallbackResolvers;
         }
 
-        #region Tray
+        private sealed record WorkingOnService :IDisposable
+        {
+            private readonly bool _state;
+            private readonly MainViewModel _model;
 
-        #endregion
+            public WorkingOnService(MainViewModel model)
+            {
+                _model = model;
+                _state = _model.IsWorkingOnService;
+                _model.IsWorkingOnService = true;
+            }
+
+            public void Dispose()
+            {
+                _model.IsWorkingOnService = _state;
+            }
+        }
     }
 }

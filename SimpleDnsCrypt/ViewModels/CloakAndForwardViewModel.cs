@@ -57,8 +57,7 @@ namespace SimpleDnsCrypt.ViewModels
             else
             {
                 //set default
-                _cloakingRulesFile = Path.Combine(Directory.GetCurrentDirectory(), Global.DnsCryptProxyFolder,
-                    Global.CloakingRulesFileName);
+                _cloakingRulesFile = Path.Combine(Global.DnsCryptFolderPath, Global.CloakingRulesFileName);
                 Properties.Settings.Default.CloakingRulesFile = _cloakingRulesFile;
                 Properties.Settings.Default.Save();
             }
@@ -71,8 +70,7 @@ namespace SimpleDnsCrypt.ViewModels
             else
             {
                 //set default
-                _forwardingRulesFile = Path.Combine(Directory.GetCurrentDirectory(), Global.DnsCryptProxyFolder,
-                    Global.ForwardingRulesFileName);
+                _forwardingRulesFile = Path.Combine(Global.DnsCryptFolderPath, Global.ForwardingRulesFileName);
                 Properties.Settings.Default.ForwardingRulesFile = _forwardingRulesFile;
                 Properties.Settings.Default.Save();
             }
@@ -173,11 +171,11 @@ namespace SimpleDnsCrypt.ViewModels
         {
             try
             {
+                var saveAndRestartService = false;
                 if (_isForwardingEnabled)
                 {
                     if (dnscryptProxyConfiguration == null) return;
 
-                    var saveAndRestartService = false;
 
                     if (dnscryptProxyConfiguration.forwarding_rules == null)
                     {
@@ -190,45 +188,21 @@ namespace SimpleDnsCrypt.ViewModels
                         File.Create(_forwardingRulesFile).Dispose();
                         await Task.Delay(50);
                     }
-
-                    if (saveAndRestartService)
-                    {
-                        DnscryptProxyConfigurationManager.DnscryptProxyConfiguration = dnscryptProxyConfiguration;
-                        if (DnscryptProxyConfigurationManager.SaveConfiguration())
-                        {
-                            if (DnsCryptProxyManager.IsDnsCryptProxyInstalled())
-                            {
-                                if (DnsCryptProxyManager.IsDnsCryptProxyRunning())
-                                {
-                                    await DnsCryptProxyManager.Restart().ConfigureAwait(false);
-                                }
-                                else
-                                {
-                                    await DnsCryptProxyManager.Start().ConfigureAwait(false);
-                                }
-                            }
-                            else
-                            {
-                                await Task.Run(() => DnsCryptProxyManager.Install()).ConfigureAwait(false);
-                                await Task.Delay(Global.ServiceInstallTime).ConfigureAwait(false);
-                                if (DnsCryptProxyManager.IsDnsCryptProxyInstalled())
-                                {
-                                    await DnsCryptProxyManager.Start().ConfigureAwait(false);
-                                }
-                            }
-                        }
-                    }
                 }
                 else
                 {
+                    saveAndRestartService = true;
                     //disable forwarding again
                     _isForwardingEnabled = false;
                     dnscryptProxyConfiguration.forwarding_rules = null;
+                }
+
+                if (saveAndRestartService)
+                {
                     DnscryptProxyConfigurationManager.DnscryptProxyConfiguration = dnscryptProxyConfiguration;
-                    DnscryptProxyConfigurationManager.SaveConfiguration();
-                    if (DnsCryptProxyManager.IsDnsCryptProxyRunning())
+                    if (DnscryptProxyConfigurationManager.SaveConfiguration())
                     {
-                        await DnsCryptProxyManager.Restart().ConfigureAwait(false);
+                        await DnsCryptProxyManager.RestartIfRunning().ConfigureAwait(false);
                     }
                 }
             }
@@ -618,11 +592,11 @@ namespace SimpleDnsCrypt.ViewModels
         {
             try
             {
+                var saveAndRestartService = false;
                 if (_isCloakingEnabled)
                 {
                     if (dnscryptProxyConfiguration == null) return;
 
-                    var saveAndRestartService = false;
 
                     if (dnscryptProxyConfiguration.cloaking_rules == null)
                     {
@@ -635,45 +609,21 @@ namespace SimpleDnsCrypt.ViewModels
                         File.Create(_cloakingRulesFile).Dispose();
                         await Task.Delay(50);
                     }
-
-                    if (saveAndRestartService)
-                    {
-                        DnscryptProxyConfigurationManager.DnscryptProxyConfiguration = dnscryptProxyConfiguration;
-                        if (DnscryptProxyConfigurationManager.SaveConfiguration())
-                        {
-                            if (DnsCryptProxyManager.IsDnsCryptProxyInstalled())
-                            {
-                                if (DnsCryptProxyManager.IsDnsCryptProxyRunning())
-                                {
-                                    await DnsCryptProxyManager.Restart().ConfigureAwait(false);
-                                }
-                                else
-                                {
-                                    await DnsCryptProxyManager.Start().ConfigureAwait(false);
-                                }
-                            }
-                            else
-                            {
-                                await Task.Run(() => DnsCryptProxyManager.Install()).ConfigureAwait(false);
-                                await Task.Delay(Global.ServiceInstallTime).ConfigureAwait(false);
-                                if (DnsCryptProxyManager.IsDnsCryptProxyInstalled())
-                                {
-                                    await DnsCryptProxyManager.Start().ConfigureAwait(false);
-                                }
-                            }
-                        }
-                    }
                 }
                 else
                 {
+                    saveAndRestartService = true;
                     //disable cloaking again
                     _isCloakingEnabled = false;
                     dnscryptProxyConfiguration.cloaking_rules = null;
+                }
+
+                if (saveAndRestartService)
+                {
                     DnscryptProxyConfigurationManager.DnscryptProxyConfiguration = dnscryptProxyConfiguration;
-                    DnscryptProxyConfigurationManager.SaveConfiguration();
-                    if (DnsCryptProxyManager.IsDnsCryptProxyRunning())
+                    if (DnscryptProxyConfigurationManager.SaveConfiguration())
                     {
-                        await DnsCryptProxyManager.Restart().ConfigureAwait(false);
+                        await DnsCryptProxyManager.RestartIfRunning().ConfigureAwait(false);
                     }
                 }
             }

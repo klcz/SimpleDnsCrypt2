@@ -10,6 +10,8 @@ namespace SimpleDnsCrypt.Converters
     /// </summary>
     public class BoolToVisibilityConverter : IValueConverter
     {
+        public static readonly BoolToVisibilityConverter Instance = new BoolToVisibilityConverter();
+
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             try

@@ -5,7 +5,7 @@
         Title="SplashDialogWindow"
         Height="300"
         Width="800"
-        ShowInTaskbar="False"
+        ShowInTaskbar="True"
         UseNoneWindowStyle="True"
         ShowCloseButton="False"
         ShowTitleBar="False"            

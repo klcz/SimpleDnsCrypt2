@@ -28,6 +28,7 @@
             <converters:InUseToBackgroundConverter x:Key="InUseToBackgroundConverter" />
             <converters:TextLengthToFontSizeConverter x:Key="TextLengthToFontSizeConverter" />
             <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+            <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter" />
             <converters:BoolToVisibilityCollapsedConverter x:Key="BoolToVisibilityCollapsedConverter" />
             <converters:ReverseBoolToEnabledConverter x:Key="ReverseBoolToEnabledConverter" />
             <converters:QueryLogTypeToColorConverter x:Key="QueryLogTypeToColorConverter" />
@@ -40,7 +41,6 @@
             <converters:IntegerToBoolConverter x:Key="IntegerToBoolConverter" />
             <converters:IntegerToVisibilityConverter x:Key="IntegerToVisibilityConverter" />
             <converters:HeightConverter x:Key="HeightConverter" />
-            <converters:UninstallToEnableConverter x:Key="UninstallToEnableConverter" />
             <converters:ProtocolToVisibilityConverter x:Key="ProtocolToVisibilityConverter" />
             <converters:RouteStateToColorConverter x:Key="RouteStateToColorConverter" />
         </ResourceDictionary>
@@ -191,77 +191,76 @@
                                         </DrawingBrush>
                                     </Border.BorderBrush>
                                     <StackPanel Orientation="Vertical">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <iconPacks:PackIconMaterial Grid.Column="0" Grid.Row="0" Height="20"
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconMaterial Height="20"
                                                                         Width="20" Kind="Flash" Opacity="0.7"
                                                                         Foreground="#FF8ab329"
                                                                         HorizontalAlignment="Left"
                                                                         VerticalAlignment="Center" />
-                                            <TextBlock Grid.Column="1" Grid.Row="0"
-                                                       Text="{lex:Loc Key=default_settings_service_header}"
+                                            <TextBlock Text="{lex:Loc Key=default_settings_service_header}"
                                                        TextWrapping="Wrap" VerticalAlignment="Center"
                                                        Foreground="#FF8ab329" FontSize="20"
                                                        Opacity="0.7" Margin="5,0,0,3" FontWeight="Bold">
                                             </TextBlock>
-                                        </Grid>
+                                        </StackPanel>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="250" />
-                                                <ColumnDefinition Width="350" />
                                                 <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="35" />
-                                                <RowDefinition Height="40" />
+                                                <RowDefinition Height="45" />
                                             </Grid.RowDefinitions>
-                                            <Label Foreground="#FF575757" Grid.Row="0" Grid.Column="0"
+                                            <Label Grid.Row="0" Grid.Column="0"
+                                                    Foreground="#FF575757" DockPanel.Dock="Left"
                                                    Content="{lex:Loc Key=default_settings_service}"
                                                    VerticalAlignment="Bottom"
                                                    HorizontalAlignment="Left" Margin="0,0,0,5">
                                             </Label>
-                                            <controls:MetroProgressBar IsIndeterminate="True" Grid.Row="0"
-                                                                       Grid.Column="1"
-                                                                       Visibility="{Binding IsWorkingOnService, Converter={StaticResource BoolToVisibilityConverter}}"
-                                                                       Width="250"
-                                                                       Foreground="{DynamicResource AccentColorBrush}"
-                                                                       Margin="0" HorizontalAlignment="Center"
-                                                                       VerticalAlignment="Center" />
+                                            <controls:MetroProgressBar
+                                                Grid.Row="0" Grid.Column="1"
+                                                IsIndeterminate="True" DockPanel.Dock="Right"
+                                                Visibility="{Binding IsWorkingOnService, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                Width="250"
+                                                Foreground="{DynamicResource MahApps.Brushes.Accent}"
+                                                Margin="0" HorizontalAlignment="Center"
+                                                VerticalAlignment="Center" />
+                                            <Button Grid.Row="0" Grid.Column="2"
+                                                    Style="{DynamicResource CustomAccentedSquareButtonStyle}"
+                                                    Content="Install"
+                                                    HorizontalAlignment="Left"
+                                                    Visibility="{Binding IsServiceInstalled, Converter={StaticResource InverseBoolToVisibilityConverter}, Mode=OneWay}"
+                                                    Command="{Binding InstallServiceCommand}"/>
                                             <controls:ToggleSwitch
+                                                Grid.Row="0" Grid.Column="2"
                                                 IsEnabled="{Binding IsWorkingOnService, Converter={StaticResource ReverseBoolToEnabledConverter}}"
-                                                Grid.Row="0" Grid.Column="2" Cursor="Hand"
-                                                IsOn="{Binding IsResolverRunning}"
-                                                HorizontalAlignment="Right" VerticalAlignment="Top">
+                                                Visibility="{Binding IsServiceInstalled, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}"
+                                                DockPanel.Dock="Right" Cursor="Hand"
+                                                IsOn="{Binding IsResolverRunning}">
                                             </controls:ToggleSwitch>
 
                                             <Label Foreground="#FF575757" Grid.Row="1" Grid.Column="0"
                                                    Content="{lex:Loc Key=advanced_settings_uninstall_text}"
                                                    VerticalAlignment="Bottom"
-                                                   HorizontalAlignment="Left" Margin="0,0,0,5">
+                                                   HorizontalAlignment="Left" Margin="0,0,0,5"
+                                                   Visibility="{Binding IsServiceInstalled, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}">
                                             </Label>
                                             <controls:MetroProgressBar IsIndeterminate="True" Grid.Row="1" Grid.Column="1"
-                                                                       Visibility="{Binding IsUninstallingService, Converter={StaticResource BoolToVisibilityConverter}}"
-                                                                       Width="250" Foreground="{DynamicResource AccentColorBrush}"
-                                                                       HorizontalAlignment="Center" Margin="50,14,50,15"
-                                                                       VerticalAlignment="Center" />
-                                            <Button x:Name="UninstallService" Grid.Row="1" Grid.Column="2"
+                                                                       Width="250" Foreground="{DynamicResource MahApps.Brushes.Accent}"
+                                                                       HorizontalAlignment="Center"
+                                                                       Margin="50,14,50,15"
+                                                                       VerticalAlignment="Center"
+                                                                       Visibility="{Binding IsUninstallingService, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                            <Button Grid.Row="1" Grid.Column="2"
                                                     Style="{DynamicResource CustomAccentedSquareButtonStyle}"
-                                                    Margin="0,10,0,0" HorizontalAlignment="Right"
+                                                    Margin="0,10,0,0" HorizontalAlignment="Left"
                                                     Content="{lex:Loc Key=advanced_settings_uninstall_button}"
-                                                    Cursor="Hand">
-                                                <Button.IsEnabled>
-                                                    <MultiBinding
-                                                        Converter="{StaticResource UninstallToEnableConverter}">
-                                                        <Binding Path="IsUninstallingService" />
-                                                        <Binding Path="IsServiceInstalled" />
-                                                    </MultiBinding>
-                                                </Button.IsEnabled>
-                                            </Button>
-
+                                                    Cursor="Hand" 
+                                                    Command="{Binding UninstallServiceCommand}"
+                                                    Visibility="{Binding IsServiceInstalled, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}"
+                                                     />
                                         </Grid>
                                     </StackPanel>
                                 </Border>
@@ -455,14 +454,14 @@
                                                        Foreground="#FF8ab329" FontSize="20"
                                                        Opacity="0.7" FontWeight="Bold" Margin="5,0,0,0" />
                                             <Button DockPanel.Dock="Right"
-                                                    x:Name="SaveLocalServers"
+                                                    Command="{Binding SaveLocalServersCommand}"
                                                     Cursor="Hand"
                                                     IsEnabled="{Binding Resolvers.Count, Converter={StaticResource IntegerToBoolConverter}}"
                                                     Content="{lex:Loc Key=default_settings_apply_settings}"
                                                     Width="Auto" HorizontalAlignment="Right"
                                                     Style="{DynamicResource CustomAccentedSquareButtonStyle}" />
                                             <Button DockPanel.Dock="Right"
-                                                    x:Name="AddCustomResolverFromStamp"
+                                                    Command="{Binding AddCustomResolverFromStampCommand}"
                                                     Cursor="Hand"
                                                     Content="Add custom resolver"
                                                     Width="Auto" HorizontalAlignment="Right"

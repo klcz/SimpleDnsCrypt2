@@ -84,7 +84,7 @@ namespace SimpleDnsCrypt.ViewModels
             set
             {
                 _isDomainBlockLogLogging = value;
-                DomainBlockLog(DnscryptProxyConfigurationManager.DnscryptProxyConfiguration);
+                _ = DomainBlockLog(DnscryptProxyConfigurationManager.DnscryptProxyConfiguration);
                 NotifyOfPropertyChange(() => IsDomainBlockLogLogging);
             }
         }
@@ -122,7 +122,7 @@ namespace SimpleDnsCrypt.ViewModels
             }
         }
 
-        private async void DomainBlockLog(DnscryptProxyConfiguration dnscryptProxyConfiguration)
+        private async Task DomainBlockLog(DnscryptProxyConfiguration dnscryptProxyConfiguration)
         {
             const string defaultLogFormat = "ltsv";
             try
@@ -160,30 +160,11 @@ namespace SimpleDnsCrypt.ViewModels
                         DnscryptProxyConfigurationManager.DnscryptProxyConfiguration = dnscryptProxyConfiguration;
                         if (DnscryptProxyConfigurationManager.SaveConfiguration())
                         {
-                            if (DnsCryptProxyManager.IsDnsCryptProxyInstalled())
-                            {
-                                if (DnsCryptProxyManager.IsDnsCryptProxyRunning())
-                                {
-                                    await DnsCryptProxyManager.Restart().ConfigureAwait(false);
-                                }
-                                else
-                                {
-                                    await DnsCryptProxyManager.Start().ConfigureAwait(false);
-                                }
-                            }
-                            else
-                            {
-                                await Task.Run(() => DnsCryptProxyManager.Install()).ConfigureAwait(false);
-                                await Task.Delay(Global.ServiceInstallTime).ConfigureAwait(false);
-                                if (DnsCryptProxyManager.IsDnsCryptProxyInstalled())
-                                {
-                                    await DnsCryptProxyManager.Start().ConfigureAwait(false);
-                                }
-                            }
+                            await DnsCryptProxyManager.RestartIfRunning().ConfigureAwait(false);
                         }
                     }
 
-                    DomainBlockLogFile = Path.Combine(Directory.GetCurrentDirectory(), Global.DnsCryptProxyFolder,
+                    DomainBlockLogFile = Path.Combine(Global.DnsCryptFolderPath,
                         dnscryptProxyConfiguration.blocked_names.log_file);
 
                     if (!string.IsNullOrEmpty(_domainBlockLogFile))
@@ -194,7 +175,7 @@ namespace SimpleDnsCrypt.ViewModels
                             await Task.Delay(50);
                         }
 
-                        await Task.Run(() =>
+                        await Task.Run(async () =>
                         {
                             using (var reader = new StreamReader(new FileStream(_domainBlockLogFile,
                                 FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
@@ -204,7 +185,7 @@ namespace SimpleDnsCrypt.ViewModels
 
                                 while (_isDomainBlockLogLogging)
                                 {
-                                    Thread.Sleep(500);
+                                    await Task.Delay(500);
                                     //if the file size has not changed, idle
                                     if (reader.BaseStream.Length == lastMaxOffset)
                                         continue;
@@ -213,8 +194,7 @@ namespace SimpleDnsCrypt.ViewModels
                                     reader.BaseStream.Seek(lastMaxOffset, SeekOrigin.Begin);
 
                                     //read out of the file until the EOF
-                                    string line;
-                                    while ((line = reader.ReadLine()) != null)
+                                    while (reader.ReadLine() is { } line)
                                     {
                                         var blockLogLine = new DomainBlockLogLine(line);
                                         AddLogLine(blockLogLine);
@@ -240,7 +220,7 @@ namespace SimpleDnsCrypt.ViewModels
                     DnscryptProxyConfigurationManager.SaveConfiguration();
                     if (DnsCryptProxyManager.IsDnsCryptProxyRunning())
                     {
-                        await DnsCryptProxyManager.Restart().ConfigureAwait(false);
+                        await DnsCryptProxyManager.RestartIfRunning().ConfigureAwait(false);
                     }
                     Execute.OnUIThread(() => { DomainBlockLogLines.Clear(); });
                 }

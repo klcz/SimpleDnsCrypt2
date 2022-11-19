@@ -20,7 +20,7 @@ namespace SimpleDnsCrypt
     {
         private CompositionContainer _container;
         private static readonly ILog Log = LogManagerHelper.Factory();
-        private static Mutex _mutex = null;
+        private static Mutex _mutex;
 
         public AppBootstrapper()
         {

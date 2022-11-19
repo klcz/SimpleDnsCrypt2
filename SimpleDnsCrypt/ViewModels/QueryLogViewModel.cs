@@ -46,7 +46,7 @@ namespace SimpleDnsCrypt.ViewModels
             else
             {
                 //set default
-                _queryLogFile = Path.Combine(Directory.GetCurrentDirectory(), Global.DnsCryptProxyFolder, Global.QueryLogFileName);
+                _queryLogFile = Path.Combine(Global.DnsCryptFolderPath, Global.QueryLogFileName);
                 Properties.Settings.Default.QueryLogFile = _queryLogFile;
                 Properties.Settings.Default.Save();
             }
@@ -205,26 +205,7 @@ namespace SimpleDnsCrypt.ViewModels
                         DnscryptProxyConfigurationManager.DnscryptProxyConfiguration = dnscryptProxyConfiguration;
                         if (DnscryptProxyConfigurationManager.SaveConfiguration())
                         {
-                            if (DnsCryptProxyManager.IsDnsCryptProxyInstalled())
-                            {
-                                if (DnsCryptProxyManager.IsDnsCryptProxyRunning())
-                                {
-                                    await DnsCryptProxyManager.Restart().ConfigureAwait(false);
-                                }
-                                else
-                                {
-                                    await DnsCryptProxyManager.Start().ConfigureAwait(false);
-                                }
-                            }
-                            else
-                            {
-                                await Task.Run(() => DnsCryptProxyManager.Install()).ConfigureAwait(false);
-                                await Task.Delay(Global.ServiceInstallTime).ConfigureAwait(false);
-                                if (DnsCryptProxyManager.IsDnsCryptProxyInstalled())
-                                {
-                                    await DnsCryptProxyManager.Start().ConfigureAwait(false);
-                                }
-                            }
+                            await DnsCryptProxyManager.RestartIfRunning().ConfigureAwait(false);
                         }
                     }
 
@@ -283,7 +264,7 @@ namespace SimpleDnsCrypt.ViewModels
                         DnscryptProxyConfigurationManager.DnscryptProxyConfiguration = dnscryptProxyConfiguration;
                         if (DnscryptProxyConfigurationManager.SaveConfiguration())
                         {
-                            await DnsCryptProxyManager.Restart().ConfigureAwait(false);
+                            await DnsCryptProxyManager.RestartIfRunning().ConfigureAwait(false);
                         }
                     }
                     Execute.OnUIThread(() => { QueryLogLines.Clear(); });
