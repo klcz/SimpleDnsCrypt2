@@ -30,7 +30,7 @@ Windows 10 LTSC 21H2 is tested(-ish) to work, other users are welcome to test an
 
 ### Installing
 
-To install Simple DNSCrypt use the [MSI package](https://github.com/instantsc/SimpleDnsCrypt/releases/download/0.7.2-beta2/SimpleDNSCrypt.msi).
+To install Simple DNSCrypt use the [MSI package](https://github.com/instantsc/SimpleDnsCrypt/releases/latest).
 
 ### Deinstallation
 
