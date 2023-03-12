@@ -64,7 +64,7 @@ For now, the only update option is to download and install the newest version ma
 ## Built With
 
 * [Visual Studio 2022](https://www.visualstudio.com/downloads/)
-* [.NET 6](https://dotnet.microsoft.com/download/dotnet)
+* [.NET 7](https://dotnet.microsoft.com/download/dotnet)
 * [WiX](https://wixtoolset.org/)
 
 ## Authors
