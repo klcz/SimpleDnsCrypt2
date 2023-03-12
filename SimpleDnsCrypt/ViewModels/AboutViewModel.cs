@@ -65,15 +65,10 @@ namespace SimpleDnsCrypt.ViewModels
                     {
                         LicenseHeaderText = "Simple DNSCrypt",
                         LicenseText = await LoadLicense("SimpleDNSCrypt.txt").ConfigureAwait(false),
-                        LicenseRegularLink = new LicenseLink
-                        {
-                            LinkText = "simplednscrypt.org",
-                            LinkUri = new Uri("https://simplednscrypt.org/")
-                        },
                         LicenseCodeLink = new LicenseLink
                         {
                             LinkText = LocalizationEx.GetUiString("about_view_on_github", Thread.CurrentThread.CurrentCulture),
-                            LinkUri = new Uri("https://github.com/bitbeans/SimpleDnsCrypt")
+                            LinkUri = new Uri("https://github.com/instantsc/SimpleDnsCrypt")
                         }
                     },
                     new License
@@ -88,7 +83,7 @@ namespace SimpleDnsCrypt.ViewModels
                         LicenseCodeLink = new LicenseLink
                         {
                             LinkText = LocalizationEx.GetUiString("about_view_on_github", Thread.CurrentThread.CurrentCulture),
-                            LinkUri = new Uri("https://github.com/jedisct1/dnscrypt-proxy")
+                            LinkUri = new Uri("https://github.com/DNSCrypt/dnscrypt-proxy")
                         }
                     },
                     new License
@@ -178,7 +173,7 @@ namespace SimpleDnsCrypt.ViewModels
                         LicenseCodeLink = new LicenseLink
                         {
                             LinkText = LocalizationEx.GetUiString("about_view_on_github", Thread.CurrentThread.CurrentCulture),
-                            LinkUri = new Uri("https://github.com/SeriousM/WPFLocalizationExtension")
+                            LinkUri = new Uri("https://github.com/XAMLMarkupExtensions/WPFLocalizeExtension")
                         }
                     },
                     new License
