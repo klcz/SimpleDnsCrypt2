@@ -317,36 +317,41 @@
                                             </ItemsControl.ItemsPanel>
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
-                                                    <controls:Tile Cursor="Hand" Title="{Binding Name}"
+                                                    <controls:Tile Cursor="Hand" Title="{Binding Name, Mode=OneWay}"
                                                                    cal:Message.Attach="[Event Click] = [Action NetworkCardClicked($dataContext)]"
-                                                                   TitleFontSize="{Binding Name, Converter={StaticResource TextLengthToFontSizeConverter}}"
+                                                                   TitleFontSize="{Binding Name, Mode=OneWay, Converter={StaticResource TextLengthToFontSizeConverter}}"
                                                                    ToolTip="{Binding Description}" Foreground="#FFFFFF"
                                                                    Background="{Binding Converter={StaticResource InUseToBackgroundConverter}}"
                                                                    TiltFactor="1" Width="Auto" Height="100"
                                                                    HorizontalAlignment="Left">
-                                                        <Grid Margin="15,0,0,0">
+                                                        <Grid Height="100">
                                                             <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="150" />
-                                                                <ColumnDefinition Width="20" />
+                                                                <ColumnDefinition Width="170" />
                                                             </Grid.ColumnDefinitions>
                                                             <Grid.RowDefinitions>
                                                                 <RowDefinition Height="*" />
                                                             </Grid.RowDefinitions>
-                                                            <iconPacks:PackIconMaterial HorizontalAlignment="Center"
-                                                                                        VerticalAlignment="Center"
-                                                                                        Grid.Column="0" Grid.Row="0"
-                                                                                        Kind="{Binding Converter={StaticResource InterfaceTypeToIconConverter}}"
-                                                                                        Foreground="#FFFFFF" Width="48"
-                                                                                        Height="48"
-                                                                                        Margin="15,0,0,0" />
-                                                            <iconPacks:PackIconMaterial Grid.Column="1" Grid.Row="0"
-                                                                                        Kind="Check"
-                                                                                        Width="16" Height="16"
-                                                                                        VerticalAlignment="Top"
-                                                                                        HorizontalAlignment="Right"
-                                                                                        Margin="0,-20,7,0"
-                                                                                        Foreground="#FFFFFF"
-                                                                                        Visibility="{Binding UseDnsCrypt, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                                            <iconPacks:PackIconMaterial Grid.Row="0" Grid.Column="0"
+                                                                HorizontalAlignment="Center"
+                                                                VerticalAlignment="Center"
+                                                                Kind="{Binding Converter={StaticResource InterfaceTypeToIconConverter}}"
+                                                                Foreground="#FFFFFF"
+                                                                Width="40"
+                                                                Height="40" />
+                                                            <iconPacks:PackIconMaterial Grid.Row="0" Grid.Column="0"
+                                                                HorizontalAlignment="Right"
+                                                                VerticalAlignment="Top"
+                                                                Kind="Check"
+                                                                Width="16" Height="16"
+                                                                Margin="7"
+                                                                Foreground="#FFFFFF"
+                                                                Visibility="{Binding UseDnsCrypt, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                                            <TextBlock Grid.Row="0" Grid.Column="0"
+                                                                       Foreground="White"
+                                                                       Text="{Binding IpAddresses}"
+                                                                       Margin="3"
+                                                                       TextTrimming="CharacterEllipsis">
+                                                            </TextBlock>
                                                         </Grid>
                                                     </controls:Tile>
                                                 </DataTemplate>

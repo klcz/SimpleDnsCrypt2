@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
+using System.Net.Sockets;
 
 namespace SimpleDnsCrypt.Helper
 {
@@ -46,15 +47,23 @@ namespace SimpleDnsCrypt.Helper
                                                !nic.Name.Contains(blacklistEntry));
                     if (!add) continue;
                 }
+
+                var ipAddresses = string.Join(", ",
+                    nic.GetIPProperties()
+                        .UnicastAddresses
+                        .Select(x => x.Address)
+                        .Where(x => x.AddressFamily is AddressFamily.InterNetwork or AddressFamily.InterNetworkV6)
+                        .OrderBy(x => x.AddressFamily));
                 var localNetworkInterface = new LocalNetworkInterface
                 {
                     Name = nic.Name,
-                    Description = nic.Description,
+                    Description = string.Join("\n", nic.Description, $"Addresses: {ipAddresses}"),
                     Type = nic.NetworkInterfaceType,
                     Dns = GetDnsServerList(nic.Id),
                     Ipv4Support = nic.Supports(NetworkInterfaceComponent.IPv4),
                     Ipv6Support = nic.Supports(NetworkInterfaceComponent.IPv6),
-                    OperationalStatus = nic.OperationalStatus
+                    OperationalStatus = nic.OperationalStatus,
+                    IpAddresses = ipAddresses,
                 };
                 // strict check if the interface supports IPv6
                 localNetworkInterface.UseDnsCrypt = IsUsingDnsCrypt(listenAddresses, localNetworkInterface, localNetworkInterface.Ipv6Support);

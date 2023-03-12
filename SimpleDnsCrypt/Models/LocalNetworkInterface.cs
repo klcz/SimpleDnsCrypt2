@@ -114,5 +114,7 @@ namespace SimpleDnsCrypt.Models
                 NotifyOfPropertyChange(() => UseDnsCrypt);
             }
         }
+
+        public string IpAddresses { get; set; }
     }
 }
