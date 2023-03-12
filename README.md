@@ -18,7 +18,7 @@ Simple DNSCrypt is a simple management tool to configure [dnscrypt-proxy](https:
 
 ## Status
 
-Uses dnscrypt-proxy: **2.1.2**
+Uses dnscrypt-proxy: **2.1.4**
 
 
 ## Getting Started
