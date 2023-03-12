@@ -214,33 +214,30 @@ namespace SimpleDnsCrypt.ViewModels
                         {
                             await Task.Run(() =>
                             {
-                                using (var reader = new StreamReader(new FileStream(_queryLogFile,
-                                    FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+                                using var reader = new StreamReader(new FileStream(_queryLogFile,
+                                    FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+                                //start at the end of the file
+                                var lastMaxOffset = reader.BaseStream.Length;
+
+                                while (_isQueryLogLogging)
                                 {
-                                    //start at the end of the file
-                                    var lastMaxOffset = reader.BaseStream.Length;
+                                    Thread.Sleep(500);
+                                    //if the file size has not changed, idle
+                                    if (reader.BaseStream.Length == lastMaxOffset)
+                                        continue;
 
-                                    while (_isQueryLogLogging)
+                                    //seek to the last max offset
+                                    reader.BaseStream.Seek(lastMaxOffset, SeekOrigin.Begin);
+
+                                    //read out of the file until the EOF
+                                    while (reader.ReadLine() is { } line)
                                     {
-                                        Thread.Sleep(500);
-                                        //if the file size has not changed, idle
-                                        if (reader.BaseStream.Length == lastMaxOffset)
-                                            continue;
-
-                                        //seek to the last max offset
-                                        reader.BaseStream.Seek(lastMaxOffset, SeekOrigin.Begin);
-
-                                        //read out of the file until the EOF
-                                        string line;
-                                        while ((line = reader.ReadLine()) != null)
-                                        {
-                                            var queryLogLine = new QueryLogLine(line);
-                                            AddLogLine(queryLogLine);
-                                        }
-
-                                        //update the last max offset
-                                        lastMaxOffset = reader.BaseStream.Position;
+                                        var queryLogLine = new QueryLogLine(line);
+                                        AddLogLine(queryLogLine);
                                     }
+
+                                    //update the last max offset
+                                    lastMaxOffset = reader.BaseStream.Position;
                                 }
                             }).ConfigureAwait(false);
                         }

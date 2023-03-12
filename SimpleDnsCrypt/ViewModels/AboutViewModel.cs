@@ -47,7 +47,7 @@ namespace SimpleDnsCrypt.ViewModels
                     Process.Start(SelectedLicense.LicenseRegularLink.LinkUri.ToString());
                 }
             }
-            catch (Exception)
+            catch
             {
             }
         }
@@ -215,7 +215,7 @@ namespace SimpleDnsCrypt.ViewModels
                 var orderedList = tmpList.OrderBy(l => l.LicenseHeaderText);
                 _licenses = new BindableCollection<License>(orderedList);
             }
-            catch (Exception)
+            catch
             {
             }
         }
@@ -275,10 +275,10 @@ namespace SimpleDnsCrypt.ViewModels
                 var resourceName = "SimpleDnsCrypt.Resources.Licenses." + licenseFileName;
                 stream = assembly.GetManifestResourceStream(resourceName);
                 if (stream != null)
-                    using (var reader = new StreamReader(stream))
-                    {
-                        return await reader.ReadToEndAsync().ConfigureAwait(false);
-                    }
+                {
+                    using var reader = new StreamReader(stream);
+                    return await reader.ReadToEndAsync().ConfigureAwait(false);
+                }
             }
             catch (Exception)
             {

@@ -38,28 +38,9 @@ namespace SimpleDnsCrypt.Models
         public QueryLogLineType Type { get; set; }
         public QueryLogReturnCode ReturnCode { get; set; }
         public bool Cached { get; set; }
-        public string CachedText
-        {
-            get
-            {
-                if (Cached)
-                {
-                    return "cached";
-                }
-                else
-                {
-                    return "live";
-                }
-            }
-        }
+        public string CachedText => Cached ? "cached" : "live";
         public long Duration { get; set; }
-        public string DurationText
-        {
-            get
-            {
-                return $"{Duration}ms";
-            }
-        }
+        public string DurationText => $"{Duration}ms";
         public string Server { get; set; }
 
         public QueryLogLine(string line)

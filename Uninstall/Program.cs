@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.NetworkInformation;
 
 namespace Uninstall
@@ -77,22 +78,10 @@ namespace Uninstall
                     "TAP"
                 };
 
-                var networkInterfaces = new List<NetworkInterface>();
-                foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
-                {
-                    if (nic.OperationalStatus != OperationalStatus.Up)
-                    {
-                        continue;
-                    }
-                    foreach (var blacklistEntry in networkInterfaceBlacklist)
-                    {
-                        if (nic.Description.Contains(blacklistEntry) || nic.Name.Contains(blacklistEntry)) continue;
-                        if (!networkInterfaces.Contains(nic))
-                        {
-                            networkInterfaces.Add(nic);
-                        }
-                    }
-                }
+                var networkInterfaces = NetworkInterface.GetAllNetworkInterfaces()
+                    .Where(nic => nic.OperationalStatus == OperationalStatus.Up)
+                    .Where(nic => !networkInterfaceBlacklist.Any(blacklistEntry => nic.Description.Contains(blacklistEntry) || nic.Name.Contains(blacklistEntry)))
+                    .ToList();
 
                 foreach (var networkInterface in networkInterfaces)
                 {
@@ -100,7 +89,7 @@ namespace Uninstall
                     ExecuteWithArguments("netsh", $"interface ipv6 delete dns \"{networkInterface.Name}\" all");
                 }
             }
-            catch (Exception)
+            catch
             {
             }
         }

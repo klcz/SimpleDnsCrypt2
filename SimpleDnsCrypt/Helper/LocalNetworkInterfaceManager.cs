@@ -41,14 +41,9 @@ namespace SimpleDnsCrypt.Helper
 
                 if (!showHiddenCards)
                 {
-                    var add = true;
-                    foreach (var blacklistEntry in Global.NetworkInterfaceBlacklist)
-                    {
-                        if (nic.Description.Contains(blacklistEntry) || nic.Name.Contains(blacklistEntry))
-                        {
-                            add = false;
-                        }
-                    }
+                    var add = Global.NetworkInterfaceBlacklist
+                        .All(blacklistEntry => !nic.Description.Contains(blacklistEntry) && 
+                                               !nic.Name.Contains(blacklistEntry));
                     if (!add) continue;
                 }
                 var localNetworkInterface = new LocalNetworkInterface
@@ -78,18 +73,16 @@ namespace SimpleDnsCrypt.Helper
         public static bool IsUsingDnsCrypt(List<string> listenAddresses, LocalNetworkInterface localNetworkInterface, bool strictCheck = false)
         {
             if (listenAddresses == null) return false;
-            var addressOnly = (from listenAddress in listenAddresses let lastIndex = listenAddress.LastIndexOf(":", StringComparison.Ordinal) select listenAddress.Substring(0, lastIndex).Replace("[", "").Replace("]", "")).ToList();
+            var addressOnly = (from listenAddress in listenAddresses let lastIndex = listenAddress.LastIndexOf(":", StringComparison.Ordinal) select listenAddress.Substring(0, lastIndex).Replace("[", "").Replace("]", "")).ToHashSet();
 
             if (strictCheck)
             {
                 // check for ALL addresses
-                return addressOnly.Intersect(localNetworkInterface.Dns.Select(x => x.Address).ToList()).Count() == addressOnly.Count;
+                return addressOnly.IsSubsetOf(localNetworkInterface.Dns.Select(x => x.Address));
             }
 
-            return localNetworkInterface.Dns.Any(d => addressOnly.Contains(d.Address));
+            return addressOnly.Overlaps(localNetworkInterface.Dns.Select(x => x.Address));
         }
-
-
 
         /// <summary>
         ///     Get the nameservers of an interface.
@@ -142,17 +135,15 @@ namespace SimpleDnsCrypt.Helper
         /// </summary>
         /// <param name="unconvertedServers"></param>
         /// <returns></returns>
-        public static List<DnsServer> ConvertToDnsList(List<string> unconvertedServers)
+        public static List<DnsServer> ConvertToDnsList(IEnumerable<string> unconvertedServers)
         {
-            return (from unconvertedServer in unconvertedServers
-                    let lastIndex = unconvertedServer.LastIndexOf(":", StringComparison.Ordinal)
-                    select unconvertedServer.Substring(0, lastIndex)
-                into addressOnly
-                    select new DnsServer
-                    {
-                        Address = addressOnly.Replace("[", "").Replace("]", ""),
-                        Type = addressOnly.Contains(":") ? NetworkInterfaceComponent.IPv6 : NetworkInterfaceComponent.IPv4
-                    }).ToList();
+            return unconvertedServers
+                .Select(unconvertedServer => unconvertedServer[..unconvertedServer.LastIndexOf(":", StringComparison.Ordinal)].Replace("[", null).Replace("]", null))
+                .Select(addressOnly => new DnsServer
+                {
+                    Address = addressOnly,
+                    Type = addressOnly.Contains(":") ? NetworkInterfaceComponent.IPv6 : NetworkInterfaceComponent.IPv4
+                }).ToList();
         }
 
         public static bool UnsetNameservers(LocalNetworkInterface localNetworkInterface)
@@ -166,7 +157,7 @@ namespace SimpleDnsCrypt.Helper
         /// <param name="localNetworkInterface"></param>
         /// <param name="dnsServers"></param>
         /// <returns></returns>
-        public static bool SetNameservers(LocalNetworkInterface localNetworkInterface, List<DnsServer> dnsServers)
+        public static bool SetNameservers(this LocalNetworkInterface localNetworkInterface, List<DnsServer> dnsServers)
         {
             try
             {

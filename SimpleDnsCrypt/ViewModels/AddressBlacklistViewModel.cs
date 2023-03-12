@@ -26,7 +26,6 @@ namespace SimpleDnsCrypt.ViewModels
             _events = events;
             _events.SubscribeOnPublishedThread(this);
             _addressBlacklist = new BindableCollection<string>();
-            LoadAddressBlacklist();
         }
 
         public string SelectedAddressBlacklistEntry
@@ -48,17 +47,6 @@ namespace SimpleDnsCrypt.ViewModels
                 if (value.Equals(_addressBlacklist)) return;
                 _addressBlacklist = value;
                 NotifyOfPropertyChange(() => AddressBlacklist);
-            }
-        }
-
-        private void LoadAddressBlacklist()
-        {
-            try
-            {
-
-            }
-            catch (Exception)
-            {
             }
         }
     }

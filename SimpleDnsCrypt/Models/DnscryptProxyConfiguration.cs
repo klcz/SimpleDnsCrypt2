@@ -3,7 +3,6 @@ using Nett;
 using SimpleDnsCrypt.Config;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using SimpleDnsCrypt.Utils.Models;
 
 // ReSharper disable InconsistentNaming
@@ -160,7 +159,7 @@ namespace SimpleDnsCrypt.Models
 
         /// <summary>
         ///		Response for blocked queries.  Options are `refused`, `hinfo` (default) or
-        ///		an IP response.  To give an IP response, use the format `a:<IPv4>,aaaa:<IPv6>`.
+        ///		an IP response.  To give an IP response, use the format `a:&lt;IPv4&gt;,aaaa:&lt;IPv6&gt;`.
         ///		Using the `hinfo` option means that some responses will be lies.
         ///		Unfortunately, the `hinfo` option appears to be required for Android 8+
         /// </summary>

@@ -12,16 +12,12 @@ namespace SimpleDnsCrypt.Converters
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             var text = (string)value;
-            if (text.Length > 10 && text.Length < 15)
+            return text.Length switch
             {
-                return 14;
-                //return 12;
-            }
-            if (text.Length >= 15)
-            {
-                return 10;
-            }
-            return 14;
+                <= 10 => 14,
+                > 10 and < 15 => 14,
+                _ => 10,
+            };
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
