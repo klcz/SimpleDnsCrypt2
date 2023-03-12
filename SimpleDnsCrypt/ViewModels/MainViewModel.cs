@@ -20,6 +20,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using ReactiveUI;
@@ -147,9 +148,10 @@ namespace SimpleDnsCrypt.ViewModels
                     {
                         resolver.IsInServerList = false;
                     }
-                    SaveDnsCryptConfiguration();
-                    Task.Run(async () =>
+
+                    Dispatcher.CurrentDispatcher.InvokeAsync(async Task() =>
                     {
+                        await SaveDnsCryptConfiguration();
                         await LoadResolvers();
                         await HandleService();
                         NotifyOfPropertyChange(() => IsDnsCryptAutomaticModeEnabled);
@@ -805,7 +807,7 @@ namespace SimpleDnsCrypt.ViewModels
             }
         }
 
-        public async void SaveDnsCryptConfiguration()
+        public async Task SaveDnsCryptConfiguration()
         {
             IsSavingConfiguration = true;
             try
@@ -959,7 +961,8 @@ namespace SimpleDnsCrypt.ViewModels
         {
             if (!HasErrors)
             {
-                SaveDnsCryptConfiguration();
+                //TODO: do something about this
+                _ = SaveDnsCryptConfiguration();
             }
         }
 
@@ -974,7 +977,7 @@ namespace SimpleDnsCrypt.ViewModels
             if (_resolvers.Any(x => x.IsInServerList))
             {
                 IsDnsCryptAutomaticModeEnabled = false;
-                SaveDnsCryptConfiguration();
+                await SaveDnsCryptConfiguration();
                 await LoadResolvers();
             }
             else
@@ -1000,7 +1003,7 @@ namespace SimpleDnsCrypt.ViewModels
                 {
                     Stamp = customResolverViewModel.Stamp.Value
                 });
-                SaveDnsCryptConfiguration();
+                await SaveDnsCryptConfiguration();
                 await LoadResolvers();
             }
         }
@@ -1044,7 +1047,7 @@ namespace SimpleDnsCrypt.ViewModels
                     {
                         _dnscryptProxyConfiguration.anonymized_dns.routes.RemoveAt(oldRoute);
                     }
-                    SaveDnsCryptConfiguration();
+                    await SaveDnsCryptConfiguration();
                     await LoadResolvers();
                 }
                 else
@@ -1081,7 +1084,7 @@ namespace SimpleDnsCrypt.ViewModels
                         _dnscryptProxyConfiguration.anonymized_dns.routes ??= new List<Route>();
                         _dnscryptProxyConfiguration.anonymized_dns.routes.Add(newRoute);
                     }
-                    SaveDnsCryptConfiguration();
+                    await SaveDnsCryptConfiguration();
                     await LoadResolvers();
                 }
             }
