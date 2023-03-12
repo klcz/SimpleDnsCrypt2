@@ -515,7 +515,8 @@
                                                   d:DataContext="{d:DesignInstance Type=models:AvailableResolver}">
                                             <DataGrid.Columns>
                                                 <DataGridCheckBoxColumn Header="Enabled"
-                                                                        Binding="{Binding IsInServerList}" />
+                                                                        Binding="{Binding IsInServerList, UpdateSourceTrigger=PropertyChanged}"
+                                                                        ElementStyle="{x:Static DataGridCheckBoxColumn.DefaultEditingElementStyle}" />
                                                 <DataGridTemplateColumn>
                                                     <DataGridTemplateColumn.CellTemplate>
                                                         <DataTemplate DataType="{x:Type models:AvailableResolver}">
