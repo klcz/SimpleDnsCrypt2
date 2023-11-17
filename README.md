@@ -1,6 +1,6 @@
 [![license](https://img.shields.io/github/license/instantsc/SimpleDnsCrypt.svg?style=flat-square)](https://github.com/instantsc/SimpleDnsCrypt/blob/master/LICENSE.md) 
 [![Github All Releases](https://img.shields.io/github/release/instantsc/SimpleDnsCrypt.svg?style=flat-square&include_prereleases)](https://github.com/instantsc/SimpleDnsCrypt/releases/latest) 
-[![dnscrypt--proxy](https://img.shields.io/badge/dnscrypt--proxy-2.1.4-orange.svg?style=flat-square)](https://github.com/jedisct1/dnscrypt-proxy) 
+[![dnscrypt--proxy](https://img.shields.io/badge/dnscrypt--proxy-2.1.5-orange.svg?style=flat-square)](https://github.com/jedisct1/dnscrypt-proxy) 
 [![Github All Releases](https://img.shields.io/github/downloads/instantsc/SimpleDnsCrypt/total.svg?style=flat-square)](https://github.com/instantsc/SimpleDnsCrypt/releases/latest) 
 
 
@@ -18,7 +18,7 @@ Simple DNSCrypt is a simple management tool to configure [dnscrypt-proxy](https:
 
 ## Status
 
-Uses dnscrypt-proxy: **2.1.4**
+Uses dnscrypt-proxy: **2.1.5**
 
 
 ## Getting Started
