@@ -1103,7 +1103,7 @@ namespace SimpleDnsCrypt.ViewModels
             //anonymized_dns
             _relays.Clear();
             var relays = RelayHelper.GetRelays();
-            if (relays != null && relays.Count > 0)
+            if (relays is { Count: > 0 })
             {
                 _relays.AddRange(relays);
             }
@@ -1120,10 +1120,10 @@ namespace SimpleDnsCrypt.ViewModels
             {
                 PrepareRoutes();
                 var availableResolvers = await DnsCryptProxyManager.GetAvailableResolvers();
-                var allResolversWithoutFilters = await DnsCryptProxyManager.GetAllResolversWithoutFilters();
-                var allResolversWithFilters = new List<AvailableResolver>();
+                var allResolvers = await DnsCryptProxyManager.GetAllResolversWithoutFilters();
+                var filteredResolvers = new List<AvailableResolver>();
 
-                foreach (var resolver in allResolversWithoutFilters)
+                foreach (var resolver in allResolvers)
                 {
                     if (_dnscryptProxyConfiguration.doh_servers)
                         if (!_dnscryptProxyConfiguration.dnscrypt_servers)
@@ -1153,53 +1153,37 @@ namespace SimpleDnsCrypt.ViewModels
                     if (resolver.Ipv6)
                         if (!_dnscryptProxyConfiguration.ipv6_servers)
                             continue;
-                    allResolversWithFilters.Add(resolver);
+                    filteredResolvers.Add(resolver);
                 }
 
-                foreach (var resolver in availableResolvers)
+                var filteredResolversByName = filteredResolvers.DistinctBy(x => x.Name).ToDictionary(x => x.Name);
+
+                var availableRelayNames = _relays?.Select(x => x.Name).ToHashSet();
+                var configRoutesByServerName = _dnscryptProxyConfiguration.anonymized_dns?.routes?.DistinctBy(x => x.server_name).ToDictionary(x => x.server_name);
+                foreach (var resolverName in availableResolvers.Select(x => x.Name))
                 {
-                    AvailableResolver first = null;
-                    foreach (var r in allResolversWithFilters)
+                    if (filteredResolversByName.TryGetValue(resolverName, out var matchingResolver))
                     {
-                        if (!r.Name.Equals(resolver.Name)) continue;
-                        first = r;
-                        if (_dnscryptProxyConfiguration.anonymized_dns?.routes != null)
+                        if (configRoutesByServerName?.TryGetValue(matchingResolver.Name, out var route) == true)
                         {
-                            if (_dnscryptProxyConfiguration.anonymized_dns.routes.Count > 0)
-                            {
-                                var route = _dnscryptProxyConfiguration.anonymized_dns.routes.FirstOrDefault(re => re.server_name.Equals(resolver.Name));
-                                if (route != null)
-                                {
-                                    first.Route = route;
-                                    if (_relays != null && _relays.Count > 0)
-                                    {
-                                        var relays = _relays.Select(x => x.Name).ToList();
-                                        var valid = first.Route.via.Intersect(relays).Count() == first.Route.via.Count();
-                                        first.RouteState = valid ? RouteState.Valid : RouteState.Invalid;
-                                    }
-                                    else
-                                    {
-                                        first.RouteState = RouteState.Invalid;
-                                    }
-                                }
-                            }
+                            matchingResolver.Route = route;
+                            var valid = availableRelayNames?.IsSupersetOf(matchingResolver.Route.via) ?? false;
+                            matchingResolver.RouteState = valid ? RouteState.Valid : RouteState.Invalid;
                         }
 
-                        break;
+                        matchingResolver.IsInServerList = true;
                     }
-
-                    if (first != null) first.IsInServerList = true;
                 }
 
                 if (_isDnsCryptAutomaticModeEnabled)
                 {
-                    foreach (var resolver in allResolversWithFilters)
+                    foreach (var resolver in filteredResolvers)
                     {
                         resolver.IsInServerList = false;
                     }
                 }
 
-                Resolvers = new BindableCollection<AvailableResolver>(allResolversWithFilters.OrderBy(o => o.DisplayName));
+                Resolvers = new BindableCollection<AvailableResolver>(filteredResolvers.OrderBy(o => o.DisplayName));
             }
             finally
             {

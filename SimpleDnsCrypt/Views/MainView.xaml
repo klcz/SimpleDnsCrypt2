@@ -326,20 +326,20 @@
                                                                    HorizontalAlignment="Left">
                                                         <Grid Height="100">
                                                             <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="170" />
+                                                                <ColumnDefinition Width="140" />
+                                                                <ColumnDefinition Width="30" />
                                                             </Grid.ColumnDefinitions>
                                                             <Grid.RowDefinitions>
                                                                 <RowDefinition Height="*" />
                                                             </Grid.RowDefinitions>
-                                                            <iconPacks:PackIconMaterial Grid.Row="0" Grid.Column="0"
+                                                            <iconPacks:PackIconMaterial Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
                                                                 HorizontalAlignment="Center"
                                                                 VerticalAlignment="Center"
                                                                 Kind="{Binding Converter={StaticResource InterfaceTypeToIconConverter}}"
                                                                 Foreground="#FFFFFF"
                                                                 Width="40"
                                                                 Height="40" />
-                                                            <iconPacks:PackIconMaterial Grid.Row="0" Grid.Column="0"
-                                                                HorizontalAlignment="Right"
+                                                            <iconPacks:PackIconMaterial Grid.Row="0" Grid.Column="1"
                                                                 VerticalAlignment="Top"
                                                                 Kind="Check"
                                                                 Width="16" Height="16"
@@ -521,14 +521,15 @@
                                             <DataGrid.Columns>
                                                 <DataGridCheckBoxColumn Header="Enabled"
                                                                         Binding="{Binding IsInServerList, UpdateSourceTrigger=PropertyChanged}"
-                                                                        ElementStyle="{x:Static DataGridCheckBoxColumn.DefaultEditingElementStyle}" />
-                                                <DataGridTemplateColumn>
+                                                                        ElementStyle="{x:Static DataGridCheckBoxColumn.DefaultEditingElementStyle}"
+                                                                        CanUserResize="False"/>
+                                                <DataGridTemplateColumn Width="35" CanUserResize="False">
                                                     <DataGridTemplateColumn.CellTemplate>
                                                         <DataTemplate DataType="{x:Type models:AvailableResolver}">
                                                             <Button
                                                                 Visibility="{Binding Protocol, Converter={StaticResource ProtocolToVisibilityConverter}}"
                                                                 Background="White"
-                                                                Width="20"
+                                                                Width="25"
                                                                 Height="20"
                                                                 Cursor="Hand"
                                                                 HorizontalContentAlignment="Center"
@@ -545,8 +546,7 @@
                                                                     HorizontalContentAlignment="Center"
                                                                     VerticalContentAlignment="Center">
                                                                     <iconPacks:PackIconMaterial.Foreground>
-                                                                        <SolidColorBrush
-                                                                            Color="{Binding RouteState, Converter={StaticResource RouteStateToColorConverter}}" />
+                                                                        <SolidColorBrush Color="{Binding RouteState, Converter={StaticResource RouteStateToColorConverter}, Mode=OneWay}" />
                                                                     </iconPacks:PackIconMaterial.Foreground>
                                                                 </iconPacks:PackIconMaterial>
                                                                 <Button.ToolTip>
@@ -571,13 +571,16 @@
                                                                     Binding="{Binding Protocol}" />
                                                 <DataGridCheckBoxColumn Header="DnsSec" 
                                                                         IsReadOnly="True" 
-                                                                        Binding="{Binding DnsSec}"/>
+                                                                        Binding="{Binding DnsSec}"
+                                                                        CanUserResize="False"/>
                                                 <DataGridCheckBoxColumn Header="NoLog" 
                                                                         IsReadOnly="True" 
-                                                                        Binding="{Binding NoLog}"/>
+                                                                        Binding="{Binding NoLog}"
+                                                                        CanUserResize="False"/>
                                                 <DataGridCheckBoxColumn Header="NoFilter" 
                                                                         IsReadOnly="True" 
-                                                                        Binding="{Binding NoFilter}"/>
+                                                                        Binding="{Binding NoFilter}"
+                                                                        CanUserResize="False"/>
                                                 <DataGridTextColumn IsReadOnly="True" Header="Description"
                                                                     Binding="{Binding Description}" Width="400">
                                                     <DataGridTextColumn.ElementStyle>
