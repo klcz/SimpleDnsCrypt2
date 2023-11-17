@@ -48,22 +48,28 @@ namespace SimpleDnsCrypt.Helper
                     if (!add) continue;
                 }
 
-                var ipAddresses = string.Join(", ",
-                    nic.GetIPProperties()
-                        .UnicastAddresses
-                        .Select(x => x.Address)
-                        .Where(x => x.AddressFamily is AddressFamily.InterNetwork or AddressFamily.InterNetworkV6)
-                        .OrderBy(x => x.AddressFamily));
+                var addressList = nic.GetIPProperties()
+                    .UnicastAddresses
+                    .Select(x => x.Address)
+                    .Where(x => x.AddressFamily is AddressFamily.InterNetwork or AddressFamily.InterNetworkV6)
+                    .OrderBy(x => x.AddressFamily)
+                    .ToList();
+                var ipAddressString = string.Join(", ", addressList.Take(3));
+                if (addressList.Count > 3)
+                {
+                    ipAddressString += "...";
+                }
+
                 var localNetworkInterface = new LocalNetworkInterface
                 {
                     Name = nic.Name,
-                    Description = string.Join("\n", nic.Description, $"Addresses: {ipAddresses}"),
+                    Description = string.Join("\n", nic.Description, $"Addresses: {ipAddressString}"),
                     Type = nic.NetworkInterfaceType,
                     Dns = GetDnsServerList(nic.Id),
                     Ipv4Support = nic.Supports(NetworkInterfaceComponent.IPv4),
                     Ipv6Support = nic.Supports(NetworkInterfaceComponent.IPv6),
                     OperationalStatus = nic.OperationalStatus,
-                    IpAddresses = ipAddresses,
+                    IpAddresses = ipAddressString,
                 };
                 // strict check if the interface supports IPv6
                 localNetworkInterface.UseDnsCrypt = IsUsingDnsCrypt(listenAddresses, localNetworkInterface, localNetworkInterface.Ipv6Support);
